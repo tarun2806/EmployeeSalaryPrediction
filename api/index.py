@@ -10,8 +10,9 @@ CORS(app)
 
 # Load artifacts
 # We use relative paths for Vercel
+# Load artifacts - bundled inside the api folder
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODELS_PATH = os.path.join(BASE_DIR, '..')
+MODELS_PATH = BASE_DIR
 
 attr_model = joblib.load(os.path.join(MODELS_PATH, "attr_model.pkl"))
 sal_model = joblib.load(os.path.join(MODELS_PATH, "sal_model.pkl"))
