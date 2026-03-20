@@ -1,7 +1,6 @@
-streamlit
+flask
+flask-cors
+scikit-learn
+numpy
 joblib
 pandas
-numpy
-plotly
-scikit-learn
-sqlalchemy

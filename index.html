@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURORA AI | HR Intelligence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            min-height: 100vh;
+            color: #f1f5f9;
+        }
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+        }
+        .gradient-text {
+            background: linear-gradient(90deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <header class="mb-12 text-center">
+            <h1 class="text-5xl font-extrabold mb-2 gradient-text">AURORA AI</h1>
+            <p class="text-slate-400 text-lg">Strategic workforce Intelligence Protocol v5.0</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left Panel: Form -->
+            <section class="glass p-8 shadow-2xl">
+                <h2 class="text-2xl font-bold mb-6 flex items-center">
+                    <span class="mr-2">📝</span> Employee Profile
+                </h2>
+                <form id="predictForm" class="space-y-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-400 mb-2">Age</label>
+                            <input type="number" id="Age" value="30" class="w-full bg-slate-800 border-0 rounded-xl p-3 focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-400 mb-2">Gender</label>
+                            <select id="Gender" class="w-full bg-slate-800 border-0 rounded-xl p-3">
+                                <option>Female</option>
+                                <option>Male</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-400 mb-2">Department</label>
+                            <select id="Department" class="w-full bg-slate-800 border-0 rounded-xl p-3">
+                                <option>Engineering</option>
+                                <option>Sales</option>
+                                <option>HR</option>
+                                <option>Marketing</option>
+                                <option>Finance</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-400 mb-2">Job Title</label>
+                            <select id="Job_Title" class="w-full bg-slate-800 border-0 rounded-xl p-3">
+                                <option>Engineer</option>
+                                <option>Manager</option>
+                                <option>Analyst</option>
+                                <option>HR Specialist</option>
+                                <option>Accountant</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-400 mb-2">Experience (Years)</label>
+                            <input type="number" id="Experience" value="5" class="w-full bg-slate-800 border-0 rounded-xl p-3">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-400 mb-2">Promotion (5Y)</label>
+                            <select id="Promotion" class="w-full bg-slate-800 border-0 rounded-xl p-3">
+                                <option>No</option>
+                                <option>Yes</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-400 mb-1 flex justify-between">
+                            <span>Job Satisfaction</span>
+                            <span id="satValue">0.70</span>
+                        </label>
+                        <input type="range" id="Satisfaction" min="0" max="1" step="0.05" value="0.7" 
+                               oninput="document.getElementById('satValue').innerText = parseFloat(this.value).toFixed(2)"
+                               class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-400 mb-1 flex justify-between">
+                            <span>Monthly working Hours</span>
+                            <span id="hrsValue">160</span>
+                        </label>
+                        <input type="range" id="Hours" min="80" max="400" step="5" value="160"
+                               oninput="document.getElementById('hrsValue').innerText = this.value"
+                               class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                    </div>
+
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-all active:scale-95 shadow-lg shadow-blue-500/20">
+                        🚀 RUN DEEP ANALYSIS
+                    </button>
+                </form>
+            </section>
+
+            <!-- Right Panel: Results -->
+            <section id="resultSection" class="space-y-6 hidden">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="glass p-6 text-center">
+                        <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-2">Attrition Risk</h3>
+                        <div id="riskText" class="text-5xl font-black gradient-text">0.0%</div>
+                        <div id="riskBadge" class="status-badge mt-4">Safe</div>
+                    </div>
+                    <div class="glass p-6 text-center">
+                        <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-2">Market Salary</h3>
+                        <div id="salText" class="text-4xl font-black">₹ 0</div>
+                        <p class="text-xs text-slate-500 mt-2">Optimal Adjustment Band</p>
+                    </div>
+                </div>
+
+                <div class="glass p-8">
+                    <h3 class="text-xl font-bold mb-4">Why this result?</h3>
+                    <div class="h-[300px]">
+                        <canvas id="importanceChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="glass p-6">
+                    <h3 class="text-lg font-bold mb-2 flex items-center"><span class="mr-2">💡</span> Strategic Insight</h3>
+                    <p id="insightText" class="text-slate-400 leading-relaxed"></p>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
