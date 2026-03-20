@@ -11,7 +11,7 @@ from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 
 # --- Configuration & Paths ---
-st.set_page_config(page_title="AURORA AI | Strategic HR Intelligence", page_icon="📈", layout="wide")
+st.set_page_config(page_title="Salary Prediction System | HR Intelligence", page_icon="📈", layout="wide")
 
 BANNER_PATH = "static/salary_banner.jpg"
 MODELS_DIR = "models/"
@@ -68,7 +68,7 @@ def process_data(row):
 
 # --- Sidebar Navigation ---
 with st.sidebar:
-    st.markdown("<h1 style='color: #6366f1; font-weight: 800;'>HR SMART ASSISTANT</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='color: #6366f1; font-weight: 800;'>SALARY PREDICTOR</h1>", unsafe_allow_html=True)
     st.markdown("---")
     choice = st.radio("Main Menu", ["👤 Employee Prediction", "📊 Team Analysis", "📜 Past Predictions", "🧪 Prediction Simulator"])
     st.markdown("---")
@@ -242,7 +242,7 @@ elif choice == "🧪 Prediction Simulator":
 
 # Corporate Footer
 st.divider()
-st.markdown("<p style='text-align: center; color: #64748b; font-size: 0.8rem;'>AURORA Intelligence Layer • Protocol 2.0 • Phase 5 Operational</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #64748b; font-size: 0.8rem;'>Salary Prediction System • HR Optimization Protocol</p>", unsafe_allow_html=True)
 
 # Custom Styling (Shared with the Dashboard)
 st.markdown("""
