@@ -5,7 +5,7 @@ from flask import Flask, request, jsonify, render_template, send_from_directory
 from flask_cors import CORS
 from pathlib import Path
 
-# Absolute paths for Vercel stability
+# Paths relative to the api/ directory
 BASE_DIR = Path(__file__).resolve().parent
 MODELS_PATH = BASE_DIR / "models"
 
@@ -18,10 +18,9 @@ models = {}
 def load_all():
     if not models:
         try:
-            # Re-verify the models directory on every request if needed
             if not MODELS_PATH.exists():
-                print(f"ERROR: Models path {MODELS_PATH} not found!")
-                return
+                 print(f"ERROR: Models path {MODELS_PATH} not found!")
+                 return
                 
             models["attr_model"] = joblib.load(MODELS_PATH / "attr_model.pkl")
             models["sal_model"] = joblib.load(MODELS_PATH / "sal_model.pkl")
@@ -30,9 +29,9 @@ def load_all():
             models["le_gender"] = joblib.load(MODELS_PATH / "le_gender.pkl")
             models["le_dept"] = joblib.load(MODELS_PATH / "le_dept.pkl")
             models["le_title"] = joblib.load(MODELS_PATH / "le_title.pkl")
-            print("Models successfully loaded from", MODELS_PATH)
+            print("Successfully loaded all models from", MODELS_PATH)
         except Exception as e:
-             print(f"FAILED TO LOAD MODELS: {e}")
+            print(f"CRITICAL: Failed to load models: {str(e)}")
 
 @app.route('/')
 def home():
@@ -52,7 +51,7 @@ def predict():
     try:
         load_all()
         if not models:
-            return jsonify({'error': 'Models not found on server at: ' + str(MODELS_PATH)}), 500
+            return jsonify({'error': 'Models configuration missing on server.'}), 500
             
         g = models["le_gender"].transform([data['Gender']])[0]
         d = models["le_dept"].transform([data['Department']])[0]
@@ -79,22 +78,19 @@ def predict():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/health')
+@app.route('/api/health')
 def health():
     try:
         load_all()
         return jsonify({
             'status': 'ok',
-            'models': list(models.keys()),
-            'path': str(BASE_DIR),
-            'templates_exist': (BASE_DIR / 'templates' / 'index.html').exists()
+            'models_in_memory': list(models.keys()),
+            'server_path': str(BASE_DIR)
         })
     except Exception as e:
         return jsonify({'status': 'error', 'error': str(e)}), 500
 
-# Function name must be app for Vercel
-def handler(event, context):
-    return app(event, context)
-
+# Vercel Runtime usually handles the Flask 'app' automatically if it is the entry point.
+# Using 'app' directly rather than 'handler' can often resolve issubclass errors.
 if __name__ == "__main__":
     app.run(port=5000)
