@@ -1,9 +1,0 @@
-__pycache__/
-*.pyc
-.DS_Store
-.venv/
-env/
-venv/
-.streamlit/config.toml
-*.ipynb_checkpoints
-history.db
