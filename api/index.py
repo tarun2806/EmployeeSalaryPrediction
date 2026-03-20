@@ -71,9 +71,7 @@ def health():
     except Exception as e:
         return jsonify({'status': 'error', 'error': str(e)}), 500
 
-@app.route('/')
-def home():
-    return "API is active. Models folder exists: " + str(MODELS_PATH.exists())
+# Deleted home route to allow static file serving at root
 
 if __name__ == "__main__":
     app.run(port=5000)
