@@ -1,11 +1,12 @@
 import os
 import joblib
 import numpy as np
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template, send_from_directory
 from flask_cors import CORS
 from pathlib import Path
 
-app = Flask(__name__)
+# Use the 'api' directory as the root for Flask
+app = Flask(__name__, template_folder='templates', static_folder='static')
 CORS(app)
 
 # Load artifacts - bundled inside the api folder
@@ -25,14 +26,29 @@ def load_all():
             models["le_dept"] = joblib.load(MODELS_PATH / "le_dept.pkl")
             models["le_title"] = joblib.load(MODELS_PATH / "le_title.pkl")
         except Exception as e:
-            raise Exception(f"Failed to load models at {MODELS_PATH}: {str(e)}")
+            # We don't raise here so the server stays up; predict will error
+            print(f"FAILED TO LOAD MODELS: {e}")
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/script.js')
+def serve_script():
+    return send_from_directory('static', 'script.js')
+
+@app.route('/salary_banner.jpg')
+def serve_banner():
+    return send_from_directory('static', 'salary_banner.jpg')
 
 @app.route('/api/predict', methods=['POST'])
 def predict():
     data = request.json
     try:
         load_all() # Ensure models are loaded
-        
+        if not models:
+            return jsonify({'error': 'Models not loaded on server'}), 500
+            
         # Transform categoricals
         g = models["le_gender"].transform([data['Gender']])[0]
         d = models["le_dept"].transform([data['Department']])[0]
@@ -67,11 +83,17 @@ def predict():
 def health():
     try:
         load_all()
-        return jsonify({'status': 'ok', 'message': 'Models reached and loaded', 'path': str(MODELS_PATH)})
+        return jsonify({
+            'status': 'ok', 
+            'models_loaded': len(models) > 0,
+            'path': str(MODELS_PATH)
+        })
     except Exception as e:
         return jsonify({'status': 'error', 'error': str(e)}), 500
 
-# Deleted home route to allow static file serving at root
+# Handler for Vercel
+def handler(event, context):
+    return app(event, context)
 
 if __name__ == "__main__":
     app.run(port=5000)

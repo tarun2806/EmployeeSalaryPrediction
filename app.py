@@ -13,7 +13,7 @@ from datetime import datetime
 # --- Configuration & Paths ---
 st.set_page_config(page_title="AURORA AI | Strategic HR Intelligence", page_icon="📈", layout="wide")
 
-BANNER_PATH = "salary_banner.jpg"
+BANNER_PATH = "api/static/salary_banner.jpg"
 MODELS_DIR = "api/"
 
 # --- Database for History ---
