@@ -6,19 +6,41 @@
     <title>Salary Prediction System | HR Intelligence</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary: #6366f1;
+            --bg-dark: #0f172a;
+            --glass: rgba(30, 41, 59, 0.7);
+        }
         body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-dark);
+            background-image: radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                              radial-gradient(circle at 100% 100%, rgba(167, 139, 250, 0.1) 0%, transparent 50%);
             min-height: 100vh;
             color: #f1f5f9;
+            overflow-x: hidden;
+        }
+        .sidebar {
+            background: #020617;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
         }
         .glass {
-            background: rgba(30, 41, 59, 0.7);
+            background: var(--glass);
             backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 24px;
+        }
+        .nav-item {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 12px;
+            cursor: pointer;
+        }
+        .nav-item.active {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary);
+            border-left: 4px solid var(--primary);
         }
         .gradient-text {
             background: linear-gradient(90deg, #60a5fa, #a78bfa);
@@ -32,132 +54,332 @@
             border-radius: 12px;
             font-size: 0.8rem;
             font-weight: 600;
-            text-transform: uppercase;
         }
+        .hero-gradient {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
     </style>
 </head>
-<body class="p-4 md:p-8">
-    <div class="max-w-6xl mx-auto">
-        <!-- Header -->
-        <header class="mb-12 text-center">
-            <h1 class="text-5xl font-extrabold mb-2 gradient-text">Salary Prediction System</h1>
-            <p class="text-slate-400 text-lg">Workforce Compensation Analysis Protocol</p>
-        </header>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Left Panel: Form -->
-            <section class="glass p-8 shadow-2xl">
-                <h2 class="text-2xl font-bold mb-6 flex items-center">
-                    <span class="mr-2">📝</span> Employee Profile
-                </h2>
-                <form id="predictForm" class="space-y-6">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-400 mb-2">Age</label>
-                            <input type="number" id="Age" value="30" class="w-full bg-slate-800 border-0 rounded-xl p-3 focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-400 mb-2">Gender</label>
-                            <select id="Gender" class="w-full bg-slate-800 border-0 rounded-xl p-3">
-                                <option>Female</option>
-                                <option>Male</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-400 mb-2">Department</label>
-                            <select id="Department" class="w-full bg-slate-800 border-0 rounded-xl p-3">
-                                <option>Engineering</option>
-                                <option>Sales</option>
-                                <option>HR</option>
-                                <option>Marketing</option>
-                                <option>Finance</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-400 mb-2">Job Title</label>
-                            <select id="Job_Title" class="w-full bg-slate-800 border-0 rounded-xl p-3">
-                                <option>Engineer</option>
-                                <option>Manager</option>
-                                <option>Analyst</option>
-                                <option>HR Specialist</option>
-                                <option>Accountant</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-400 mb-2">Experience (Years)</label>
-                            <input type="number" id="Experience" value="5" class="w-full bg-slate-800 border-0 rounded-xl p-3">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-400 mb-2">Promotion (5Y)</label>
-                            <select id="Promotion" class="w-full bg-slate-800 border-0 rounded-xl p-3">
-                                <option>No</option>
-                                <option>Yes</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-400 mb-1 flex justify-between">
-                            <span>Job Satisfaction</span>
-                            <span id="satValue">0.70</span>
-                        </label>
-                        <input type="range" id="Satisfaction" min="0" max="1" step="0.05" value="0.7" 
-                               oninput="document.getElementById('satValue').innerText = parseFloat(this.value).toFixed(2)"
-                               class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-400 mb-1 flex justify-between">
-                            <span>Monthly working Hours</span>
-                            <span id="hrsValue">160</span>
-                        </label>
-                        <input type="range" id="Hours" min="80" max="400" step="5" value="160"
-                               oninput="document.getElementById('hrsValue').innerText = this.value"
-                               class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer">
-                    </div>
-
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-all active:scale-95 shadow-lg shadow-blue-500/20">
-                        🚀 RUN DEEP ANALYSIS
-                    </button>
-                </form>
-            </section>
-
-            <!-- Right Panel: Results -->
-            <section id="resultSection" class="space-y-6 hidden">
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="glass p-6 text-center">
-                        <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-2">Attrition Risk</h3>
-                        <div id="riskText" class="text-5xl font-black gradient-text">0.0%</div>
-                        <div id="riskBadge" class="status-badge mt-4">Safe</div>
-                    </div>
-                    <div class="glass p-6 text-center">
-                        <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-2">Market Salary</h3>
-                        <div id="salText" class="text-4xl font-black">₹ 0</div>
-                        <p class="text-xs text-slate-500 mt-2">Optimal Adjustment Band</p>
-                    </div>
-                </div>
-
-                <div class="glass p-8">
-                    <h3 class="text-xl font-bold mb-4">Why this result?</h3>
-                    <div class="h-[300px]">
-                        <canvas id="importanceChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="glass p-6">
-                    <h3 class="text-lg font-bold mb-2 flex items-center"><span class="mr-2">💡</span> Strategic Insight</h3>
-                    <p id="insightText" class="text-slate-400 leading-relaxed"></p>
-                </div>
-            </section>
+<body class="flex flex-col md:flex-row">
+    <!-- Sidebar -->
+    <aside class="sidebar w-full md:w-72 md:h-screen sticky top-0 md:flex flex-col p-6 z-50">
+        <div class="mb-10">
+            <h1 class="text-2xl font-black text-indigo-500 tracking-tight">SALARY PREDICTOR</h1>
+            <p class="text-[10px] text-slate-500 uppercase tracking-widest mt-1">AI Intelligence Suite v5.0</p>
         </div>
-    </div>
 
-    <script src="script.js"></script>
+        <nav class="space-y-2 flex-grow">
+            <div data-tab="prediction" class="nav-item active flex items-center p-4 hover:bg-slate-900">
+                <span class="mr-3">👤</span> Employee Prediction
+            </div>
+            <div data-tab="team" class="nav-item flex items-center p-4 hover:bg-slate-900">
+                <span class="mr-3">📊</span> Team Analysis
+            </div>
+            <div data-tab="history" class="nav-item flex items-center p-4 hover:bg-slate-900">
+                <span class="mr-3">📜</span> Past Predictions
+            </div>
+            <div data-tab="simulator" class="nav-item flex items-center p-4 hover:bg-slate-900">
+                <span class="mr-3">🧪</span> Prediction Simulator
+            </div>
+        </nav>
+
+        <div class="mt-auto pt-6 border-t border-slate-800">
+            <div class="glass p-4 rounded-xl text-center">
+                <p class="text-xs text-slate-400">System Status</p>
+                <div class="flex items-center justify-center mt-1">
+                    <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                    <span class="text-xs font-bold text-green-500">ML ENGINE ONLINE</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-grow p-4 md:p-10 overflow-y-auto max-h-screen">
+        
+        <!-- UI Tabs -->
+        
+        <!-- Section: Employee Prediction -->
+        <div id="prediction" class="tab-content active space-y-8 animate-fadeIn">
+            <header class="hero-gradient p-12 rounded-[32px] text-center shadow-2xl relative overflow-hidden">
+                <div class="relative z-10">
+                    <h2 class="text-5xl font-extrabold mb-4 text-white">EMPLOYEE PREDICTION</h2>
+                    <p class="text-indigo-200 text-lg opacity-80">Deep analysis for retention risk and salary benchmarks</p>
+                </div>
+                <div class="absolute inset-0 bg-blue-500 opacity-10 mix-blend-overlay"></div>
+            </header>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Data Entry -->
+                <section class="glass p-8">
+                    <h3 class="text-xl font-bold mb-6 text-indigo-400 flex items-center uppercase tracking-wider">
+                        <span class="mr-2">📝</span> Profile Details
+                    </h3>
+                    <form id="predictForm" class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-400 mb-2">Employee Name</label>
+                            <input type="text" id="Name" value="John Doe" class="w-full bg-slate-800 border-0 rounded-xl p-4 focus:ring-2 focus:ring-indigo-500 text-white outline-none">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-400 mb-2">Age</label>
+                                <input type="number" id="Age" value="30" class="w-full bg-slate-800 border-0 rounded-xl p-4 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-400 mb-2">Experience (Yrs)</label>
+                                <input type="number" id="Experience" value="5" class="w-full bg-slate-800 border-0 rounded-xl p-4 text-white">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-400 mb-2">Department</label>
+                                <select id="Department" class="w-full bg-slate-800 border-0 rounded-xl p-4 text-white">
+                                    <option>Engineering</option><option>Sales</option><option>HR</option><option>Marketing</option><option>Finance</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-400 mb-2">Job Title</label>
+                                <select id="Job_Title" class="w-full bg-slate-800 border-0 rounded-xl p-4 text-white">
+                                    <option>Engineer</option><option>Manager</option><option>Analyst</option><option>HR Specialist</option><option>Accountant</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-400 mb-2">Gender</label>
+                                <select id="Gender" class="w-full bg-slate-800 border-0 rounded-xl p-4 text-white">
+                                    <option>Male</option><option>Female</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-400 mb-2 text-center">Promoted Recently?</label>
+                                <div class="flex gap-4 mt-2 justify-center">
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="radio" name="Promotion" value="No" checked class="hidden peer">
+                                        <div class="px-4 py-2 bg-slate-800 rounded-lg peer-checked:bg-indigo-600 transition-colors">No</div>
+                                    </label>
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="radio" name="Promotion" value="Yes" class="hidden peer">
+                                        <div class="px-4 py-2 bg-slate-800 rounded-lg peer-checked:bg-indigo-600 transition-colors">Yes</div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-400 mb-2 flex justify-between">
+                                <span>Satisfaction Score</span>
+                                <span id="satValue" class="text-indigo-400 font-bold">0.70</span>
+                            </label>
+                            <input type="range" id="Satisfaction" min="0" max="1" step="0.05" value="0.7" 
+                                   oninput="document.getElementById('satValue').innerText = parseFloat(this.value).toFixed(2)"
+                                   class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-400 mb-2 flex justify-between">
+                                <span>Monthly Work Hours</span>
+                                <span id="hrsValue" class="text-indigo-400 font-bold">160</span>
+                            </label>
+                            <input type="range" id="Hours" min="80" max="400" step="5" value="160"
+                                   oninput="document.getElementById('hrsValue').innerText = this.value"
+                                   class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                        </div>
+
+                        <button type="submit" class="w-full hero-gradient hover:scale-[1.02] text-white font-black py-5 rounded-2xl transition-all shadow-xl shadow-indigo-500/20 text-lg uppercase tracking-widest">
+                            🚀 EXECUTE AI DEEP ANALYSIS
+                        </button>
+                    </form>
+                </section>
+
+                <!-- Results Contextual -->
+                <section id="resultSection" class="hidden space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="glass p-8 text-center">
+                            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] mb-4">Risk of Leaving</h3>
+                            <div id="riskText" class="text-6xl font-black gradient-text">0.0%</div>
+                            <div id="riskBadge" class="status-badge mt-6 px-4 py-2">SAFE</div>
+                        </div>
+                        <div class="glass p-8 text-center flex flex-col justify-center">
+                            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] mb-4">Expected Salary</h3>
+                            <div id="salText" class="text-4xl font-black text-white">₹ 0</div>
+                            <p class="text-xs text-indigo-400 mt-4 font-bold">MARKET COMPETITIVE</p>
+                        </div>
+                    </div>
+
+                    <div class="glass p-8">
+                        <h3 class="text-lg font-bold mb-4 flex items-center"><span class="mr-2">📊</span> Decision Drivers</h3>
+                        <div class="h-[250px]">
+                            <canvas id="importanceChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="glass p-6 bg-indigo-900/20 border-indigo-500/30">
+                        <div class="flex items-start">
+                            <span class="text-2xl mr-4">💡</span>
+                            <div>
+                                <h4 class="font-bold text-indigo-300">Retention Insight</h4>
+                                <p id="insightText" class="text-slate-400 text-sm leading-relaxed mt-1"></p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- Section: Team Analysis -->
+        <div id="team" class="tab-content space-y-8 animate-fadeIn">
+            <header class="hero-gradient p-12 rounded-[32px] text-center shadow-2xl">
+                <h2 class="text-4xl font-extrabold mb-2">TEAM ANALYSIS</h2>
+                <p class="text-indigo-200">Bulk attrition audit and salary distribution</p>
+            </header>
+            
+            <div class="glass p-12 text-center">
+                <div class="max-w-md mx-auto">
+                    <div class="mb-8 border-2 border-dashed border-slate-700 rounded-3xl p-10 hover:border-indigo-500 transition-colors group cursor-pointer" onclick="document.getElementById('teamFile').click()">
+                        <span class="text-5xl mb-4 block group-hover:scale-110 transition-transform">📁</span>
+                        <h4 class="font-bold text-xl mb-2">Upload Team Dataset</h4>
+                        <p class="text-slate-500 text-sm">Drag and drop your CSV file here or click to browse</p>
+                        <input type="file" id="teamFile" class="hidden" accept=".csv">
+                    </div>
+                    <button id="btnBulk" class="bg-white text-indigo-900 font-bold px-8 py-3 rounded-xl hover:bg-slate-200 transition-colors">PROCESS BATCH</button>
+                    <p class="text-[10px] text-slate-600 mt-4 uppercase tracking-tighter">Required Headers: Age, Gender, Department, Job_Title, Years_at_Company, Satisfaction_Level, Average_Monthly_Hours, Promotion_Last_5Years</p>
+                </div>
+            </div>
+
+            <div id="teamResults" class="hidden space-y-8">
+                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                     <div class="glass p-6 text-center">
+                         <p class="text-xs text-slate-500 uppercase mb-1">Avg Stability</p>
+                         <p id="avgStability" class="text-3xl font-black text-indigo-400">0%</p>
+                     </div>
+                     <div class="glass p-6 text-center">
+                         <p class="text-xs text-slate-500 uppercase mb-1">High Risk Count</p>
+                         <p id="highRiskCount" class="text-3xl font-black text-red-400">0</p>
+                     </div>
+                     <div class="glass p-6 text-center">
+                         <p class="text-xs text-slate-500 uppercase mb-1">Total Payroll Est.</p>
+                         <p id="totalPayroll" class="text-3xl font-black text-green-400">₹0</p>
+                     </div>
+                 </div>
+                 <div class="glass p-8">
+                     <h3 class="text-lg font-bold mb-6">Risk vs Salary Map</h3>
+                     <div class="h-[400px]">
+                         <canvas id="teamChart"></canvas>
+                     </div>
+                 </div>
+            </div>
+        </div>
+
+        <!-- Section: History -->
+        <div id="history" class="tab-content space-y-8 animate-fadeIn">
+            <div class="flex justify-between items-center">
+                <h2 class="text-3xl font-black">PREDICTION HISTORY</h2>
+                <button id="btnClearHistory" class="text-red-400 hover:text-red-300 font-bold text-sm px-4 py-2 border border-red-400/30 rounded-lg hover:bg-red-400/10">CLEAR ALL RECORDS</button>
+            </div>
+            
+            <div class="glass overflow-hidden">
+                <table class="w-full text-left">
+                    <thead class="bg-white/5">
+                        <tr>
+                            <th class="p-4 text-xs font-bold text-slate-500 uppercase">Employee</th>
+                            <th class="p-4 text-xs font-bold text-slate-500 uppercase">Est. Salary</th>
+                            <th class="p-4 text-xs font-bold text-slate-500 uppercase">Risk</th>
+                            <th class="p-4 text-xs font-bold text-slate-500 uppercase">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody" class="divide-y divide-white/5">
+                        <!-- History rows will be injected here -->
+                    </tbody>
+                </table>
+                <div id="historyEmpty" class="p-20 text-center text-slate-600 hidden">
+                    <p class="text-4xl mb-4">📭</p>
+                    <p>No records found in the database.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Simulator -->
+        <div id="simulator" class="tab-content space-y-8 animate-fadeIn">
+            <header class="hero-gradient p-12 rounded-[32px] text-center shadow-2xl">
+                <h2 class="text-4xl font-extrabold mb-2">WHATS-IF SIMULATOR</h2>
+                <p class="text-indigo-200">Model the impact of HR policy changes</p>
+            </header>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="glass p-8">
+                    <h3 class="text-xl font-bold mb-6">Current Policy Profile</h3>
+                    <div class="space-y-6">
+                         <div>
+                            <label class="block text-sm font-semibold text-slate-400 mb-2 flex justify-between">
+                                <span>Monthly Work Hours</span>
+                                <span id="simHrsLabel" class="text-white">160</span>
+                            </label>
+                            <input type="range" id="simHrs" min="80" max="400" value="160" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-400 mb-2 flex justify-between">
+                                <span>Baseline Satisfaction</span>
+                                <span id="simSatLabel" class="text-white">0.50</span>
+                            </label>
+                            <input type="range" id="simSat" min="0" max="1" step="0.01" value="0.5" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                        <div class="pt-6 border-t border-slate-800">
+                             <h4 class="font-bold text-indigo-400 mb-4">Intervention Strategy</h4>
+                             <label class="block text-sm font-semibold text-slate-400 mb-2 flex justify-between">
+                                <span>Boost Satisfaction By</span>
+                                <span id="simBoostLabel" class="text-green-400">+0.20</span>
+                            </label>
+                            <input type="range" id="simBoost" min="0" max="0.5" step="0.01" value="0.2" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass p-10 flex flex-col justify-center text-center">
+                    <h3 class="text-xl font-bold mb-10 uppercase tracking-widest text-slate-500">Projected Outcome</h3>
+                    <div class="flex justify-around items-center mb-10">
+                        <div>
+                             <p class="text-xs text-slate-400 mb-1 uppercase">Before</p>
+                             <p id="simBefore" class="text-4xl font-black text-red-500">0%</p>
+                        </div>
+                        <div class="text-2xl text-slate-700">➜</div>
+                        <div>
+                             <p class="text-xs text-slate-400 mb-1 uppercase">After</p>
+                             <p id="simAfter" class="text-4xl font-black text-green-500">0%</p>
+                        </div>
+                    </div>
+                    <div class="bg-green-500/10 p-6 rounded-2xl border border-green-500/30">
+                        <p class="text-green-400 font-bold">Optimization Impact:</p>
+                        <p id="simImpact" class="text-2xl font-black text-green-300">-0% RISK REDUCTION</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="/static/script.js"></script>
 </body>
 </html>
+

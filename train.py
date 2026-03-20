@@ -54,12 +54,16 @@ sal_r2 = r2_score(y_test_sal, sal_preds)
 print(f"Sal MAE: {sal_mae:.2f}, R2: {sal_r2:.4f}")
 
 # Save
-joblib.dump(attr_model, 'attr_model.pkl')
-joblib.dump(sal_model, 'sal_model.pkl')
-joblib.dump(attr_scaler, 'attr_scaler.pkl')
-joblib.dump(sal_scaler, 'sal_scaler.pkl')
-joblib.dump(le_gender, 'le_gender.pkl')
-joblib.dump(le_dept, 'le_dept.pkl')
-joblib.dump(le_title, 'le_title.pkl')
+import os
+if not os.path.exists('models'):
+    os.makedirs('models')
 
-print("Retrained successfully with Gradient Boosting Models.")
+joblib.dump(attr_model, 'models/attr_model.pkl')
+joblib.dump(sal_model, 'models/sal_model.pkl')
+joblib.dump(attr_scaler, 'models/attr_scaler.pkl')
+joblib.dump(sal_scaler, 'models/sal_scaler.pkl')
+joblib.dump(le_gender, 'models/le_gender.pkl')
+joblib.dump(le_dept, 'models/le_dept.pkl')
+joblib.dump(le_title, 'models/le_title.pkl')
+
+print("Retrained successfully with Gradient Boosting Models. Saved to models/")
