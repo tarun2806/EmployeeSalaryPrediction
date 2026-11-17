@@ -51,6 +51,42 @@ function showLogin() {
     document.getElementById("appView").classList.add("hidden");
 }
 
+let modelSchema = null;
+
+async function loadModelSchema() {
+    try {
+        modelSchema = await api("/api/model");
+        populateSelect("Department", modelSchema.categories.Department);
+        populateSelect("Job_Title", modelSchema.categories.Job_Title);
+        populateSelect("Gender", modelSchema.categories.Gender);
+        // Hide the Hours slider when the active model does not consume it
+        const hoursBlock = document.getElementById("hoursBlock");
+        if (hoursBlock && !modelSchema.features.includes("Hours")) {
+            hoursBlock.classList.add("hidden");
+        }
+        document.getElementById("modelBadge").textContent =
+            `MODEL: ${modelSchema.active_version.toUpperCase()}`;
+        if (modelSchema.caveats && modelSchema.caveats.length) {
+            document.getElementById("modelCaveat").textContent =
+                modelSchema.caveats[0];
+        }
+    } catch (err) {
+        console.error("Model schema load failed:", err);
+    }
+}
+
+function populateSelect(id, values) {
+    const sel = document.getElementById(id);
+    if (!sel || !values || !values.length) return;
+    sel.innerHTML = "";
+    values.forEach(v => {
+        const opt = document.createElement("option");
+        opt.value = v;
+        opt.textContent = v;
+        sel.appendChild(opt);
+    });
+}
+
 function showApp() {
     document.getElementById("loginView").classList.add("hidden");
     document.getElementById("appView").classList.remove("hidden");
@@ -58,6 +94,7 @@ function showApp() {
         `${currentUser.username} · ${currentUser.role}`;
     document.getElementById("btnClearHistory").classList.toggle(
         "hidden", currentUser.role !== "ADMIN");
+    loadModelSchema();
     api("/api/health").then(h => {
         const ok = h.status === "ok";
         document.getElementById("statusDot").className =
@@ -100,6 +137,80 @@ document.getElementById("btnLogout").addEventListener("click", async () => {
     csrfToken = null;
     currentUser = null;
     showLogin();
+});
+
+document.getElementById("btnChangePassword").addEventListener("click", async () => {
+    const current = prompt("Current password:");
+    if (current === null) return;
+    const next = prompt("New password (min 8 chars):");
+    if (next === null) return;
+    try {
+        await api("/api/auth/change-password", {
+            method: "POST",
+            body: JSON.stringify({ current_password: current, new_password: next }),
+        });
+        alert("Password updated. Other sessions were revoked.");
+    } catch (err) {
+        alert("Password change failed: " + err.message);
+    }
+});
+
+document.getElementById("dropzone").addEventListener("click", () => {
+    document.getElementById("teamFile").click();
+});
+
+// ---------- Analytics tab ----------
+document.getElementById("btnAnalytics").addEventListener("click", async () => {
+    const fileInput = document.getElementById("analyticsFile");
+    if (!fileInput.files[0]) return alert("Please select a CSV file first.");
+    const fd = new FormData();
+    fd.append("file", fileInput.files[0]);
+    try {
+        document.getElementById("btnAnalytics").innerText = "ANALYZING...";
+        const data = await api("/api/analytics/upload", { method: "POST", body: fd });
+        const s = data.stats;
+        document.getElementById("analyticsResults").classList.remove("hidden");
+        document.getElementById("anRows").textContent = s.rows;
+        document.getElementById("anDepts").textContent = s.by_department ? Object.keys(s.by_department).length : 0;
+        document.getElementById("anCols").textContent = s.columns;
+        document.getElementById("analyticsDisclaimer").textContent = data.disclaimer || "";
+        document.getElementById("analyticsDisclaimer").classList.remove("hidden");
+
+        const body = document.getElementById("anDeptBody");
+        body.innerHTML = "";
+        if (s.by_department) {
+            Object.entries(s.by_department).forEach(([dept, e]) => {
+                const tr = document.createElement("tr");
+                tr.className = "border-t border-white/5";
+                const fmt = v => (v === null || v === undefined) ? "—" : Number(v).toLocaleString();
+                [dept, e.count, fmt(e.avg_satisfaction), fmt(e.avg_hours), fmt(e.avg_salary),
+                 e.attrition_rate === null || e.attrition_rate === undefined ? "—" : (e.attrition_rate * 100).toFixed(1) + "%"
+                ].forEach((txt, i) => {
+                    const td = document.createElement("td");
+                    td.className = "p-3 " + (i === 0 ? "font-bold text-white" : "text-slate-400");
+                    td.textContent = txt;
+                    tr.appendChild(td);
+                });
+                body.appendChild(tr);
+            });
+        }
+
+        const ins = document.getElementById("anInsights");
+        ins.innerHTML = "";
+        (data.insights || []).forEach(i => {
+            const div = document.createElement("div");
+            div.className = "glass p-4 border-l-4 border-indigo-500";
+            const p = document.createElement("p");
+            p.className = "text-sm text-slate-300";
+            p.textContent = "💡 " + i.message;
+            div.appendChild(p);
+            ins.appendChild(div);
+        });
+    } catch (err) {
+        alert("Analytics failed: " + err.message);
+    } finally {
+        document.getElementById("btnAnalytics").innerText = "ANALYZE";
+    }
 });
 
 // ---------- Tab switching ----------

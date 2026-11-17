@@ -6,17 +6,19 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app import User, create_app, db, login_attempts, rate_limiter  # noqa: E402
+from app import User, create_app, db  # noqa: E402
 from werkzeug.security import generate_password_hash  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
-def _reset_rate_limiters():
-    login_attempts.clear()
-    rate_limiter._hits.clear()
+def _reset_state(app):
+    from app import AuditEvent, RateLimitHit, Session
+    with app.app_context():
+        RateLimitHit.query.delete()
+        AuditEvent.query.delete()
+        Session.query.delete()
+        db.session.commit()
     yield
-    login_attempts.clear()
-    rate_limiter._hits.clear()
 
 ADMIN_USER = "admin"
 ADMIN_PASS = "adminpass123"
@@ -39,6 +41,7 @@ def app(tmp_path, monkeypatch):
     monkeypatch.setenv("AURORA_DB_PATH", str(tmp_path / "test.db"))
     monkeypatch.setenv("ADMIN_USERNAME", ADMIN_USER)
     monkeypatch.setenv("ADMIN_PASSWORD", ADMIN_PASS)
+    monkeypatch.setenv("AURORA_MODEL_VERSION", "legacy")
     application = create_app(testing=True)
     yield application
 

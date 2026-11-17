@@ -111,7 +111,9 @@
     <aside class="sidebar w-full md:w-72 md:h-screen sticky top-0 md:flex flex-col p-6 z-50">
         <div class="mb-10">
             <h1 class="text-2xl font-black text-indigo-500 tracking-tight">SALARY PREDICTOR</h1>
-            <p class="text-[10px] text-slate-500 uppercase tracking-widest mt-1">AI Intelligence Suite v5.0</p>
+            <p class="text-[10px] text-slate-500 uppercase tracking-widest mt-1">AI Intelligence Suite v6.0</p>
+            <p id="modelBadge" class="text-[10px] text-indigo-400 font-bold mt-2">MODEL: —</p>
+            <p id="modelCaveat" class="text-[9px] text-slate-600 mt-1 leading-tight"></p>
         </div>
 
         <nav class="space-y-2 flex-grow">
@@ -126,6 +128,9 @@
             </div>
             <div data-tab="simulator" class="nav-item flex items-center p-4 hover:bg-slate-900">
                 <span class="mr-3">🧪</span> Prediction Simulator
+            </div>
+            <div data-tab="analytics" class="nav-item flex items-center p-4 hover:bg-slate-900">
+                <span class="mr-3">📈</span> Workforce Analytics
             </div>
         </nav>
 
@@ -142,7 +147,8 @@
                     <p id="userBadge" class="text-xs font-bold text-indigo-300 truncate">—</p>
                     <p class="text-[10px] text-slate-500 uppercase tracking-widest">Signed in</p>
                 </div>
-                <button id="btnLogout" class="text-xs font-bold text-red-400 hover:text-red-300 border border-red-400/30 rounded-lg px-3 py-1.5 hover:bg-red-400/10">LOG OUT</button>
+                <button id="btnChangePassword" class="w-full text-xs font-bold text-slate-400 hover:text-indigo-300 border border-slate-700 rounded-lg px-3 py-1.5 hover:bg-slate-800">CHANGE PASSWORD</button>
+                <button id="btnLogout" class="w-full text-xs font-bold text-red-400 hover:text-red-300 border border-red-400/30 rounded-lg px-3 py-1.5 hover:bg-red-400/10">LOG OUT</button>
             </div>
         </div>
     </aside>
@@ -232,7 +238,7 @@
                                    class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer">
                         </div>
 
-                        <div>
+                        <div id="hoursBlock">
                             <label class="block text-sm font-semibold text-slate-400 mb-2 flex justify-between">
                                 <span>Monthly Work Hours</span>
                                 <span id="hrsValue" class="text-indigo-400 font-bold">160</span>
@@ -292,7 +298,7 @@
             
             <div class="glass p-12 text-center">
                 <div class="max-w-md mx-auto">
-                    <div class="mb-8 border-2 border-dashed border-slate-700 rounded-3xl p-10 hover:border-indigo-500 transition-colors group cursor-pointer" onclick="document.getElementById('teamFile').click()">
+                    <div id="dropzone" class="mb-8 border-2 border-dashed border-slate-700 rounded-3xl p-10 hover:border-indigo-500 transition-colors group cursor-pointer">
                         <span class="text-5xl mb-4 block group-hover:scale-110 transition-transform">📁</span>
                         <h4 class="font-bold text-xl mb-2">Upload Team Dataset</h4>
                         <p class="text-slate-500 text-sm">Drag and drop your CSV file here or click to browse</p>
@@ -416,6 +422,47 @@
                         <p id="simImpact" class="text-2xl font-black text-green-300">-0% RISK REDUCTION</p>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Section: Workforce Analytics -->
+        <div id="analytics" class="tab-content space-y-8 animate-fadeIn">
+            <header class="hero-gradient p-12 rounded-[32px] text-center shadow-2xl">
+                <h2 class="text-4xl font-extrabold mb-2">WORKFORCE ANALYTICS</h2>
+                <p class="text-indigo-200">Descriptive statistics on uploaded workforce data</p>
+            </header>
+
+            <div class="glass p-8">
+                <div class="flex flex-wrap items-center gap-4">
+                    <input type="file" id="analyticsFile" accept=".csv" class="text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-indigo-600 file:text-white file:font-bold">
+                    <button id="btnAnalytics" class="bg-white text-indigo-900 font-bold px-6 py-2.5 rounded-xl hover:bg-slate-200 transition-colors">ANALYZE</button>
+                </div>
+                <p id="analyticsDisclaimer" class="hidden mt-4 text-xs text-slate-500"></p>
+            </div>
+
+            <div id="analyticsResults" class="hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="glass p-6 text-center"><p class="text-xs text-slate-500 uppercase mb-1">Records</p><p id="anRows" class="text-3xl font-black text-indigo-400">0</p></div>
+                    <div class="glass p-6 text-center"><p class="text-xs text-slate-500 uppercase mb-1">Departments</p><p id="anDepts" class="text-3xl font-black text-indigo-400">0</p></div>
+                    <div class="glass p-6 text-center"><p class="text-xs text-slate-500 uppercase mb-1">Columns</p><p id="anCols" class="text-3xl font-black text-indigo-400">0</p></div>
+                </div>
+                <div class="glass p-8">
+                    <h3 class="text-lg font-bold mb-4">By Department</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-white/5"><tr>
+                                <th class="p-3 text-xs font-bold text-slate-500 uppercase">Department</th>
+                                <th class="p-3 text-xs font-bold text-slate-500 uppercase">Count</th>
+                                <th class="p-3 text-xs font-bold text-slate-500 uppercase">Avg Satisfaction</th>
+                                <th class="p-3 text-xs font-bold text-slate-500 uppercase">Avg Hours</th>
+                                <th class="p-3 text-xs font-bold text-slate-500 uppercase">Avg Salary</th>
+                                <th class="p-3 text-xs font-bold text-slate-500 uppercase">Attrition Rate</th>
+                            </tr></thead>
+                            <tbody id="anDeptBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="anInsights" class="space-y-3"></div>
             </div>
         </div>
 

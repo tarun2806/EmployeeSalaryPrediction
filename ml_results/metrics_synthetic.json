@@ -1,0 +1,188 @@
+{
+  "dataset": "synthetic",
+  "rows": 1000,
+  "features": [
+    "Age",
+    "Gender",
+    "Department",
+    "Job_Title",
+    "Experience",
+    "Satisfaction",
+    "Hours",
+    "Promotion"
+  ],
+  "categorical": [
+    "Gender",
+    "Department",
+    "Job_Title"
+  ],
+  "test_size": 0.2,
+  "random_state": 42,
+  "attrition": {
+    "cv": {
+      "LogisticRegression": {
+        "cv_accuracy": 0.5012,
+        "cv_f1": 0.4878,
+        "cv_roc_auc": 0.4915,
+        "cv_pr_auc": 0.4948
+      },
+      "RandomForest": {
+        "cv_accuracy": 0.4625,
+        "cv_f1": 0.4487,
+        "cv_roc_auc": 0.4482,
+        "cv_pr_auc": 0.4651
+      },
+      "GradientBoosting": {
+        "cv_accuracy": 0.495,
+        "cv_f1": 0.4712,
+        "cv_roc_auc": 0.4898,
+        "cv_pr_auc": 0.5071
+      },
+      "HistGradientBoosting": {
+        "cv_accuracy": 0.4875,
+        "cv_f1": 0.4823,
+        "cv_roc_auc": 0.4793,
+        "cv_pr_auc": 0.4968
+      }
+    },
+    "test": {
+      "LogisticRegression": {
+        "model": "LogisticRegression",
+        "accuracy": 0.515,
+        "precision": 0.5106,
+        "recall": 0.4848,
+        "f1": 0.4974,
+        "roc_auc": 0.4827,
+        "pr_auc": 0.4978,
+        "confusion_matrix": [
+          [
+            55,
+            46
+          ],
+          [
+            51,
+            48
+          ]
+        ]
+      },
+      "RandomForest": {
+        "model": "RandomForest",
+        "accuracy": 0.51,
+        "precision": 0.5051,
+        "recall": 0.5051,
+        "f1": 0.5051,
+        "roc_auc": 0.4954,
+        "pr_auc": 0.4956,
+        "confusion_matrix": [
+          [
+            52,
+            49
+          ],
+          [
+            49,
+            50
+          ]
+        ]
+      },
+      "GradientBoosting": {
+        "model": "GradientBoosting",
+        "accuracy": 0.53,
+        "precision": 0.5263,
+        "recall": 0.5051,
+        "f1": 0.5155,
+        "roc_auc": 0.5414,
+        "pr_auc": 0.5109,
+        "confusion_matrix": [
+          [
+            56,
+            45
+          ],
+          [
+            49,
+            50
+          ]
+        ]
+      },
+      "HistGradientBoosting": {
+        "model": "HistGradientBoosting",
+        "accuracy": 0.52,
+        "precision": 0.5158,
+        "recall": 0.4949,
+        "f1": 0.5052,
+        "roc_auc": 0.5282,
+        "pr_auc": 0.5178,
+        "confusion_matrix": [
+          [
+            55,
+            46
+          ],
+          [
+            50,
+            49
+          ]
+        ]
+      }
+    },
+    "selected": "LogisticRegression",
+    "class_balance": {
+      "pos": 495,
+      "neg": 505
+    }
+  },
+  "salary": {
+    "cv": {
+      "LinearRegression": {
+        "cv_mae": 17678.12,
+        "cv_rmse": 20645.35,
+        "cv_r2": -0.0218
+      },
+      "Ridge": {
+        "cv_mae": 17677.82,
+        "cv_rmse": 20644.75,
+        "cv_r2": -0.0217
+      },
+      "RandomForest": {
+        "cv_mae": 17912.93,
+        "cv_rmse": 21142.6,
+        "cv_r2": -0.0716
+      },
+      "GradientBoosting": {
+        "cv_mae": 18205.18,
+        "cv_rmse": 21540.78,
+        "cv_r2": -0.1123
+      }
+    },
+    "test": {
+      "LinearRegression": {
+        "model": "LinearRegression",
+        "mae": 16830.07,
+        "rmse": 19695.18,
+        "r2": -0.0153,
+        "residual_std": 19681.51
+      },
+      "Ridge": {
+        "model": "Ridge",
+        "mae": 16830.05,
+        "rmse": 19694.79,
+        "r2": -0.0152,
+        "residual_std": 19681.12
+      },
+      "RandomForest": {
+        "model": "RandomForest",
+        "mae": 16984.7,
+        "rmse": 19996.85,
+        "r2": -0.0466,
+        "residual_std": 19968.44
+      },
+      "GradientBoosting": {
+        "model": "GradientBoosting",
+        "mae": 17614.06,
+        "rmse": 20979.96,
+        "r2": -0.152,
+        "residual_std": 20917.41
+      }
+    },
+    "selected": "Ridge",
+    "target": "Salary"
+  }
+}
