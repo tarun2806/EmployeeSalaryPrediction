@@ -10,136 +10,109 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #0b0f14;
-            --surface: #11161d;
-            --surface-2: #161d27;
-            --border: #232c38;
-            --text: #e6eaf0;
-            --text-dim: #8b95a5;
-            --accent: #5b8cff;
-            --accent-2: #7c5bff;
-            --green: #34d399;
-            --red: #f87171;
-            --amber: #fbbf24;
+            --bg:#0b0f14; --surface:#11161d; --surface-2:#161d27; --border:#232c38;
+            --text:#e6eaf0; --dim:#8b95a5; --faint:#5a6472;
+            --accent:#5b8cff; --accent-2:#7c5bff; --green:#34d399; --red:#f87171; --amber:#fbbf24;
         }
-        * { box-sizing: border-box; }
-        html, body { height: 100%; }
-        body {
-            font-family: 'Inter', system-ui, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            -webkit-font-smoothing: antialiased;
-        }
-        ::selection { background: rgba(91,140,255,.3); }
-        :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
-        @media (prefers-reduced-motion: reduce) {
-            *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
-        }
-        .sidebar { background: var(--surface); border-right: 1px solid var(--border); }
-        .topbar { background: rgba(11,15,20,.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
-        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; }
-        .card-hover { transition: border-color .15s ease, transform .15s ease; }
-        .card-hover:hover { border-color: #2e3a4a; }
-        .nav-item {
-            display: flex; align-items: center; gap: 10px;
-            padding: 9px 12px; border-radius: 9px;
-            color: var(--text-dim); font-size: 13.5px; font-weight: 500;
-            cursor: pointer; transition: all .15s ease; border: 1px solid transparent;
-        }
-        .nav-item:hover { color: var(--text); background: var(--surface-2); }
-        .nav-item.active { color: var(--text); background: var(--surface-2); border-color: var(--border); }
-        .nav-item.active .nav-ico { color: var(--accent); }
-        .nav-ico { width: 18px; text-align: center; }
-        .btn {
-            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-            font-weight: 600; font-size: 13.5px; border-radius: 9px;
-            padding: 9px 16px; transition: all .15s ease; cursor: pointer; border: 1px solid transparent;
-        }
-        .btn-primary { background: var(--accent); color: #fff; }
-        .btn-primary:hover { background: #4a7bef; }
-        .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
-        .btn-ghost { background: transparent; color: var(--text-dim); border-color: var(--border); }
-        .btn-ghost:hover { color: var(--text); border-color: #33405a; background: var(--surface-2); }
-        .btn-danger { background: transparent; color: var(--red); border-color: rgba(248,113,113,.3); }
-        .btn-danger:hover { background: rgba(248,113,113,.1); }
-        .input, select.input {
-            width: 100%; background: var(--surface-2); border: 1px solid var(--border);
-            border-radius: 9px; padding: 9px 12px; color: var(--text); font-size: 13.5px;
-            transition: border-color .15s ease;
-        }
-        .input:focus { border-color: var(--accent); outline: none; }
-        .input::placeholder { color: #5a6472; }
-        label.field-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-dim); margin-bottom: 5px; letter-spacing: .02em; }
-        .field-hint { font-size: 11px; color: #5a6472; margin-top: 4px; }
-        .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-        .badge-green { background: rgba(52,211,153,.12); color: var(--green); }
-        .badge-red { background: rgba(248,113,113,.12); color: var(--red); }
-        .badge-blue { background: rgba(91,140,255,.12); color: var(--accent); }
-        .badge-amber { background: rgba(251,191,36,.12); color: var(--amber); }
-        .badge-gray { background: rgba(139,149,165,.12); color: var(--text-dim); }
-        .stat-num { font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
-        .stat-label { font-size: 11.5px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: .06em; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; animation: fadeUp .25s ease; }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        .spinner {
-            width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.3);
-            border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite;
-            display: inline-block;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .table-base { width: 100%; border-collapse: collapse; font-size: 13px; }
-        .table-base th { text-align: left; font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: .05em; padding: 10px 14px; border-bottom: 1px solid var(--border); }
-        .table-base td { padding: 11px 14px; border-bottom: 1px solid var(--border); }
-        .table-base tbody tr:hover { background: var(--surface-2); }
-        input[type="range"] { -webkit-appearance: none; width: 100%; height: 5px; border-radius: 4px; background: var(--border); }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
-            background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
-        }
-        .empty-state { text-align: center; padding: 48px 24px; color: var(--text-dim); }
-        .empty-state .ico { font-size: 36px; margin-bottom: 12px; opacity: .6; }
-        .mono { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px; }
-        .risk-bar { height: 6px; border-radius: 4px; background: var(--border); overflow: hidden; }
-        .risk-bar > div { height: 100%; border-radius: 4px; transition: width .4s ease; }
-        @media (max-width: 768px) {
-            .sidebar { position: static; width: 100% !important; height: auto !important; }
-            .nav-scroll { display: flex; overflow-x: auto; gap: 4px; padding-bottom: 4px; }
-            .nav-item { white-space: nowrap; }
+        *{box-sizing:border-box}
+        body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+        ::selection{background:rgba(91,140,255,.3)}
+        :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+        @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+        .sidebar{background:var(--surface);border-right:1px solid var(--border)}
+        .topbar{background:rgba(11,15,20,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+        .card{background:var(--surface);border:1px solid var(--border);border-radius:14px}
+        .card-hover{transition:border-color .15s ease}
+        .card-hover:hover{border-color:#2e3a4a}
+        .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;color:var(--dim);font-size:13.5px;font-weight:500;cursor:pointer;transition:all .15s ease;border:1px solid transparent}
+        .nav-item:hover{color:var(--text);background:var(--surface-2)}
+        .nav-item.active{color:var(--text);background:var(--surface-2);border-color:var(--border)}
+        .nav-item.active .nav-ico{color:var(--accent)}
+        .nav-ico{width:18px;text-align:center}
+        .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:13.5px;border-radius:9px;padding:9px 16px;transition:all .15s ease;cursor:pointer;border:1px solid transparent;text-decoration:none}
+        .btn-primary{background:var(--accent);color:#fff}
+        .btn-primary:hover{background:#4a7bef}
+        .btn-primary:disabled{opacity:.5;cursor:not-allowed}
+        .btn-ghost{background:transparent;color:var(--dim);border-color:var(--border)}
+        .btn-ghost:hover{color:var(--text);border-color:#33405a;background:var(--surface-2)}
+        .btn-danger{background:transparent;color:var(--red);border-color:rgba(248,113,113,.3)}
+        .btn-danger:hover{background:rgba(248,113,113,.1)}
+        .btn-sm{padding:6px 12px;font-size:12px;border-radius:7px}
+        .input,select.input{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:9px 12px;color:var(--text);font-size:13.5px;transition:border-color .15s ease}
+        .input:focus{border-color:var(--accent);outline:none}
+        .input::placeholder{color:var(--faint)}
+        .field-label{display:block;font-size:12px;font-weight:600;color:var(--dim);margin-bottom:5px;letter-spacing:.02em}
+        .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
+        .badge-green{background:rgba(52,211,153,.12);color:var(--green)}
+        .badge-red{background:rgba(248,113,113,.12);color:var(--red)}
+        .badge-blue{background:rgba(91,140,255,.12);color:var(--accent)}
+        .badge-amber{background:rgba(251,191,36,.12);color:var(--amber)}
+        .badge-gray{background:rgba(139,149,165,.12);color:var(--dim)}
+        .stat-num{font-size:26px;font-weight:800;letter-spacing:-.02em}
+        .stat-label{font-size:11.5px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+        .tab-content{display:none}
+        .tab-content.active{display:block;animation:fadeUp .25s ease}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+        .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .table-base{width:100%;border-collapse:collapse;font-size:13px}
+        .table-base th{text-align:left;font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap}
+        .table-base td{padding:11px 14px;border-bottom:1px solid var(--border);white-space:nowrap}
+        .table-base tbody tr:hover{background:var(--surface-2)}
+        input[type="range"]{-webkit-appearance:none;width:100%;height:5px;border-radius:4px;background:var(--border)}
+        input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg)}
+        .empty-state{text-align:center;padding:48px 24px;color:var(--dim)}
+        .empty-state .ico{font-size:36px;margin-bottom:12px;opacity:.6}
+        .mono{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px}
+        .risk-bar{height:6px;border-radius:4px;background:var(--border);overflow:hidden}
+        .risk-bar>div{height:100%;border-radius:4px;transition:width .4s ease}
+        .stepper{display:flex;gap:0;margin-bottom:24px}
+        .step{flex:1;text-align:center;position:relative;padding-top:26px;font-size:11.5px;font-weight:600;color:var(--faint)}
+        .step::before{content:"";position:absolute;top:8px;left:50%;transform:translateX(-50%);width:14px;height:14px;border-radius:50%;background:var(--border);border:2px solid var(--surface)}
+        .step::after{content:"";position:absolute;top:14px;left:calc(-50% + 14px);width:calc(100% - 28px);height:2px;background:var(--border)}
+        .step:last-child::after{display:none}
+        .step.done{color:var(--green)}
+        .step.done::before{background:var(--green)}
+        .step.done::after{background:var(--green)}
+        .step.active{color:var(--accent)}
+        .step.active::before{background:var(--accent);box-shadow:0 0 0 4px rgba(91,140,255,.15)}
+        .dropzone{border:2px dashed var(--border);border-radius:14px;padding:40px 24px;text-align:center;cursor:pointer;transition:border-color .15s ease,background .15s ease}
+        .dropzone:hover,.dropzone.drag{border-color:var(--accent);background:rgba(91,140,255,.05)}
+        @media (max-width:768px){
+            .sidebar{position:static;width:100%!important;height:auto!important}
+            .nav-scroll{display:flex;overflow-x:auto;gap:4px;padding-bottom:4px}
+            .nav-item{white-space:nowrap}
         }
     </style>
 </head>
 <body>
-
-<!-- ============ APP ============ -->
-<div id="appView" class="h-full flex-col md:flex-row">
+<div id="appView" class="h-full flex-col md:flex-row flex">
 
     <!-- Sidebar -->
     <aside class="sidebar w-full md:w-60 shrink-0 flex flex-col p-4 gap-1">
         <div class="flex items-center gap-3 px-2 py-3 mb-2">
-            <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background: linear-gradient(135deg, var(--accent), var(--accent-2));">
-                <span class="text-white font-extrabold text-xs">A</span>
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background:linear-gradient(135deg,var(--accent),var(--accent-2));">
+                <span class="text-white font-extrabold text-xs">S</span>
             </div>
             <div class="min-w-0">
-                <h1 class="font-extrabold text-sm tracking-tight truncate">ESPS</h1>
-                <p class="text-[10px] truncate" style="color: var(--text-dim);">Salary Intelligence</p>
+                <h1 class="font-extrabold text-sm tracking-tight truncate">Salary Predictor</h1>
+                <p class="text-[10px] truncate" style="color:var(--dim);">Employee Salary Prediction System</p>
             </div>
         </div>
         <nav class="nav-scroll md:flex-col flex gap-1 flex-1">
             <div data-tab="dashboard" class="nav-item active"><span class="nav-ico">◈</span>Dashboard</div>
-            <div data-tab="predict" class="nav-item"><span class="nav-ico">◎</span>Salary Prediction</div>
-            <div data-tab="analytics" class="nav-item"><span class="nav-ico">▤</span>Analytics</div>
-            <div data-tab="history" class="nav-item"><span class="nav-ico">≡</span>History</div>
-            <div data-tab="simulator" class="nav-item"><span class="nav-ico">◐</span>Simulator</div>
-            <div data-tab="settings" class="nav-item"><span class="nav-ico">⚙</span>Account</div>
+            <div data-tab="predict" class="nav-item"><span class="nav-ico">◎</span>Individual Prediction</div>
+            <div data-tab="bulk" class="nav-item"><span class="nav-ico">▦</span>Bulk Salary Planning</div>
+            <div data-tab="history" class="nav-item"><span class="nav-ico">≡</span>Prediction History</div>
+            <div data-tab="model" class="nav-item"><span class="nav-ico">◈</span>Model Information</div>
         </nav>
-        <div class="mt-auto pt-3 border-t" style="border-color: var(--border);">
+        <div class="mt-auto pt-3 border-t" style="border-color:var(--border);">
             <div class="flex items-center justify-between px-2 py-1.5">
                 <div class="flex items-center gap-2 min-w-0">
-                    <span id="statusDot" class="w-2 h-2 rounded-full shrink-0" style="background: #5a6472;"></span>
-                    <span id="statusText" class="text-[11px] font-semibold truncate" style="color: var(--text-dim);">CHECKING…</span>
+                    <span id="statusDot" class="w-2 h-2 rounded-full shrink-0" style="background:#5a6472;"></span>
+                    <span id="statusText" class="text-[11px] font-semibold truncate" style="color:var(--dim);">CHECKING…</span>
                 </div>
-                <span id="modelBadge" class="text-[10px] font-bold mono" style="color: var(--accent);"></span>
+                <span id="modelBadge" class="text-[10px] font-bold mono" style="color:var(--accent);"></span>
             </div>
             <p id="modelCaveat" class="text-[9px] px-2 mt-1 leading-tight" style="color:#5a6472;"></p>
         </div>
@@ -150,116 +123,100 @@
         <header class="topbar sticky top-0 z-40 px-5 md:px-8 py-3.5 flex items-center justify-between">
             <div>
                 <h2 id="pageTitle" class="font-bold text-base">Dashboard</h2>
-                <p id="pageSub" class="text-[11.5px]" style="color: var(--text-dim);">Salary intelligence overview</p>
+                <p id="pageSub" class="text-[11.5px]" style="color:var(--dim);">AI-powered salary estimation and workforce salary planning</p>
             </div>
-            <div class="flex items-center gap-3">
-                <span id="envBadge" class="badge badge-gray hidden md:inline-flex">LOCAL DEMO</span>
-            </div>
+            <span class="badge badge-gray hidden md:inline-flex">LOCAL DEMO</span>
         </header>
 
-        <main class="flex-1 overflow-y-auto p-5 md:p-8" style="max-height: calc(100vh - 57px);">
+        <main class="flex-1 overflow-y-auto p-5 md:p-8" style="max-height:calc(100vh - 57px);">
 
             <!-- ===== DASHBOARD ===== -->
             <section id="dashboard" class="tab-content active space-y-6">
-                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                    <div class="card card-hover p-5">
-                        <p class="stat-label">Total Predictions</p>
-                        <p id="dTotal" class="stat-num mt-2">—</p>
-                        <p class="text-[11px] mt-1" style="color: var(--text-dim);">Stored in history</p>
-                    </div>
-                    <div class="card card-hover p-5">
-                        <p class="stat-label">Avg Risk Score</p>
-                        <p id="dRisk" class="stat-num mt-2">—</p>
-                        <div class="risk-bar mt-3"><div id="dRiskBar" style="width:0%;background:var(--accent);"></div></div>
-                    </div>
-                    <div class="card card-hover p-5">
-                        <p class="stat-label">Avg Est. Salary</p>
-                        <p id="dSalary" class="stat-num mt-2">—</p>
-                        <p id="dSalaryUnit" class="text-[11px] mt-1" style="color: var(--text-dim);">per month</p>
-                    </div>
-                    <div class="card card-hover p-5">
-                        <p class="stat-label">High-Risk Records</p>
-                        <p id="dHigh" class="stat-num mt-2">—</p>
-                        <p class="text-[11px] mt-1" style="color: var(--text-dim);">risk &gt; 60%</p>
+                <div id="dashOnboarding" class="card p-10 text-center">
+                    <div class="text-4xl mb-4" style="opacity:.5;">💼</div>
+                    <h3 class="font-bold text-lg mb-2">Plan your company's salary structure</h3>
+                    <p class="text-sm max-w-md mx-auto mb-6" style="color:var(--dim);">
+                        Start by uploading your employee salary sheet for company-wide salary benchmarks and increment planning, or make an individual salary prediction.
+                    </p>
+                    <div class="flex flex-wrap justify-center gap-3">
+                        <button class="btn btn-primary" data-goto="predict">Predict Individual Salary</button>
+                        <button class="btn btn-ghost" data-goto="bulk">Upload Employee Spreadsheet</button>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-                    <div class="card p-6 xl:col-span-2">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="font-bold text-sm">Recent Predictions</h3>
-                            <button class="btn btn-ghost !text-xs !py-1" data-goto="history">View all →</button>
+                <div id="dashData" class="hidden space-y-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                        <div class="card card-hover p-5">
+                            <p class="stat-label">Employees Processed</p>
+                            <p id="dEmployees" class="stat-num mt-2">—</p>
+                            <p class="text-[11px] mt-1" style="color:var(--dim);">in latest bulk job</p>
                         </div>
-                        <div class="overflow-x-auto">
-                            <table class="table-base">
-                                <thead><tr><th>Employee</th><th>Est. Salary</th><th>Risk</th><th>Date</th></tr></thead>
-                                <tbody id="dashRecentBody"></tbody>
-                            </table>
-                            <div id="dashEmpty" class="empty-state hidden">
-                                <div class="ico">◎</div>
-                                <p class="font-semibold text-sm">No predictions yet</p>
-                                <p class="text-xs mt-1">Run your first salary prediction to see data here.</p>
-                                <button class="btn btn-primary mt-4 !text-xs" data-goto="predict">Make a prediction</button>
-                            </div>
+                        <div class="card card-hover p-5">
+                            <p class="stat-label">Avg Current Salary</p>
+                            <p id="dCurrent" class="stat-num mt-2">—</p>
+                            <p class="text-[11px] mt-1" style="color:var(--dim);" id="dUnit1">per month</p>
+                        </div>
+                        <div class="card card-hover p-5">
+                            <p class="stat-label">Avg Salary Benchmark</p>
+                            <p id="dBenchmark" class="stat-num mt-2">—</p>
+                            <p class="text-[11px] mt-1" style="color:var(--dim);">model-estimated</p>
+                        </div>
+                        <div class="card card-hover p-5">
+                            <p class="stat-label">Proposed Increment</p>
+                            <p id="dIncrement" class="stat-num mt-2">—</p>
+                            <p class="text-[11px] mt-1" style="color:var(--dim);">HR scenario</p>
+                        </div>
+                        <div class="card card-hover p-5">
+                            <p class="stat-label">Payroll Impact (annual)</p>
+                            <p id="dPayroll" class="stat-num mt-2">—</p>
+                            <p class="text-[11px] mt-1" style="color:var(--dim);">additional cost</p>
+                        </div>
+                        <div class="card card-hover p-5">
+                            <p class="stat-label">Individual Predictions</p>
+                            <p id="dPredictions" class="stat-num mt-2">—</p>
+                            <p class="text-[11px] mt-1" style="color:var(--dim);">stored in history</p>
                         </div>
                     </div>
-                    <div class="card p-6">
-                        <h3 class="font-bold text-sm mb-4">Model Status</h3>
-                        <div class="space-y-3 text-sm">
-                            <div class="flex justify-between"><span style="color: var(--text-dim);">Active version</span><span id="dashModel" class="font-semibold mono">—</span></div>
-                            <div class="flex justify-between"><span style="color: var(--text-dim);">Dataset</span><span id="dashDataset" class="font-semibold">—</span></div>
-                            <div class="flex justify-between"><span style="color: var(--text-dim);">Engine</span><span class="font-semibold" style="color: var(--green);">● Online</span></div>
+                    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                        <div class="card p-6 xl:col-span-2">
+                            <h3 class="font-bold text-sm mb-4">Salary distribution by department</h3>
+                            <div class="h-64"><canvas id="dashDeptChart"></canvas></div>
                         </div>
-                        <div class="mt-5 pt-4 border-t" style="border-color: var(--border);">
-                            <p class="text-[11px] leading-relaxed" style="color: var(--text-dim);" id="dashCaveat"></p>
+                        <div class="card p-6">
+                            <h3 class="font-bold text-sm mb-4">Recent bulk jobs</h3>
+                            <div id="dashJobs" class="space-y-2 text-sm"></div>
+                            <button class="btn btn-ghost btn-sm w-full mt-3" data-goto="bulk">New salary plan →</button>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- ===== PREDICT ===== -->
+            <!-- ===== INDIVIDUAL PREDICTION ===== -->
             <section id="predict" class="tab-content space-y-6">
                 <div>
-                    <h3 class="font-bold text-lg">Salary & Attrition Prediction</h3>
-                    <p class="text-sm mt-0.5" style="color: var(--text-dim);">Enter employee profile details for an instant model estimate.</p>
+                    <h3 class="font-bold text-lg">Individual Salary Prediction</h3>
+                    <p class="text-sm mt-0.5" style="color:var(--dim);">Estimate a salary benchmark for one employee using the active model.</p>
                 </div>
                 <div class="grid grid-cols-1 xl:grid-cols-5 gap-5">
                     <div class="card p-6 xl:col-span-3">
                         <form id="predictForm" class="space-y-5">
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="field-label" for="Name">Employee name</label>
-                                    <input class="input" type="text" id="Name" maxlength="100" placeholder="e.g. Alex Morgan" value="">
-                                </div>
-                                <div>
-                                    <label class="field-label" for="Age">Age <span style="color:#5a6472">(16–100)</span></label>
-                                    <input class="input" type="number" id="Age" min="16" max="100" value="30">
-                                </div>
-                                <div>
-                                    <label class="field-label" for="Experience">Years at company <span style="color:#5a6472">(0–60)</span></label>
-                                    <input class="input" type="number" id="Experience" min="0" max="60" value="5">
-                                </div>
-                                <div id="hoursBlock">
-                                    <label class="field-label" for="Hours">Monthly hours <span style="color:#5a6472">(0–500)</span></label>
-                                    <input class="input" type="number" id="Hours" min="0" max="500" value="160">
-                                </div>
-                                <div>
-                                    <label class="field-label" for="Department">Department</label>
-                                    <select class="input" id="Department"></select>
-                                </div>
+                                <div><label class="field-label" for="Name">Employee name</label><input class="input" type="text" id="Name" maxlength="100" placeholder="e.g. Alex Morgan"></div>
+                                <div><label class="field-label" for="Age">Age <span style="color:var(--faint)">(16–100)</span></label><input class="input" type="number" id="Age" min="16" max="100" value="30"></div>
+                                <div><label class="field-label" for="Experience">Years at company <span style="color:var(--faint)">(0–60)</span></label><input class="input" type="number" id="Experience" min="0" max="60" value="5"></div>
+                                <div id="hoursBlock"><label class="field-label" for="Hours">Monthly hours <span style="color:var(--faint)">(0–500)</span></label><input class="input" type="number" id="Hours" min="0" max="500" value="160"></div>
+                                <div><label class="field-label" for="Department">Department</label><select class="input" id="Department"></select></div>
                                 <div>
                                     <label class="field-label" for="Job_Title">Job title</label>
                                     <select class="input" id="Job_Title"></select>
+                                    <p id="jobFamilyHint" class="text-[11px] mt-1" style="color:var(--faint);"></p>
                                 </div>
-                                <div>
-                                    <label class="field-label" for="Gender">Gender</label>
-                                    <select class="input" id="Gender"></select>
-                                </div>
+                                <div><label class="field-label" for="Gender">Gender</label><select class="input" id="Gender"></select></div>
                                 <div>
                                     <label class="field-label">Recent promotion?</label>
                                     <div class="flex gap-2 mt-1">
-                                        <label class="flex-1 cursor-pointer"><input type="radio" name="Promotion" value="No" checked class="peer sr-only"><span class="block text-center text-sm py-2 rounded-lg border peer-checked:border-[var(--accent)] peer-checked:bg-[rgba(91,140,255,.12)] peer-checked:text-white" style="border-color:var(--border);color:var(--text-dim);">No</span></label>
-                                        <label class="flex-1 cursor-pointer"><input type="radio" name="Promotion" value="Yes" class="peer sr-only"><span class="block text-center text-sm py-2 rounded-lg border peer-checked:border-[var(--accent)] peer-checked:bg-[rgba(91,140,255,.12)] peer-checked:text-white" style="border-color:var(--border);color:var(--text-dim);">Yes</span></label>
+                                        <label class="flex-1 cursor-pointer"><input type="radio" name="Promotion" value="No" checked class="peer sr-only"><span class="block text-center text-sm py-2 rounded-lg border peer-checked:border-[var(--accent)] peer-checked:bg-[rgba(91,140,255,.12)] peer-checked:text-white" style="border-color:var(--border);color:var(--dim);">No</span></label>
+                                        <label class="flex-1 cursor-pointer"><input type="radio" name="Promotion" value="Yes" class="peer sr-only"><span class="block text-center text-sm py-2 rounded-lg border peer-checked:border-[var(--accent)] peer-checked:bg-[rgba(91,140,255,.12)] peer-checked:text-white" style="border-color:var(--border);color:var(--dim);">Yes</span></label>
                                     </div>
                                 </div>
                             </div>
@@ -268,167 +225,279 @@
                                 <input type="range" id="Satisfaction" min="0" max="1" step="0.05" value="0.7">
                             </div>
                             <p id="predictError" class="hidden text-sm font-semibold" style="color:var(--red);"></p>
-                            <button type="submit" id="btnPredict" class="btn btn-primary w-full !py-2.5">
-                                <span id="btnPredictLabel">Run prediction</span>
-                            </button>
+                            <button type="submit" id="btnPredict" class="btn btn-primary w-full !py-2.5"><span id="btnPredictLabel">Run prediction</span></button>
                         </form>
                     </div>
-
                     <div class="xl:col-span-2 space-y-4">
                         <div id="resultEmpty" class="card p-8 text-center" style="min-height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
                             <div class="text-3xl mb-3" style="opacity:.4;">◎</div>
                             <p class="font-semibold text-sm">No result yet</p>
-                            <p class="text-xs mt-1" style="color:var(--text-dim);">Submit the form to see salary and attrition estimates.</p>
+                            <p class="text-xs mt-1" style="color:var(--dim);">Submit the form to see a salary benchmark estimate.</p>
                         </div>
                         <div id="resultCard" class="card p-6 hidden">
                             <div class="flex items-start justify-between mb-5">
                                 <div>
                                     <p class="stat-label">Estimated monthly salary</p>
                                     <p id="salText" class="text-3xl font-extrabold mt-1" style="color:var(--accent);">—</p>
-                                    <p id="salUnit" class="text-[11px] mt-0.5" style="color:var(--text-dim);">dataset currency / month</p>
+                                    <p id="salUnit" class="text-[11px] mt-0.5" style="color:var(--dim);">benchmark estimate</p>
                                 </div>
                                 <span id="riskBadge" class="badge badge-gray">—</span>
                             </div>
+                            <p class="text-[11px] mb-3 font-semibold" style="color:var(--dim);">This is a <strong>benchmark estimate</strong> of typical salary for the given profile — not a prediction of a future raise.</p>
                             <div class="mb-4">
-                                <div class="flex justify-between text-xs mb-1.5">
-                                    <span style="color:var(--text-dim);">Attrition risk</span>
-                                    <span id="riskText" class="font-bold">—</span>
-                                </div>
+                                <div class="flex justify-between text-xs mb-1.5"><span style="color:var(--dim);">Attrition risk (supporting)</span><span id="riskText" class="font-bold">—</span></div>
                                 <div class="risk-bar"><div id="riskBarFill" style="width:0%;"></div></div>
                             </div>
                             <div class="card p-4 mb-4" style="background:var(--surface-2);">
-                                <p class="text-[11px] font-bold uppercase tracking-wider mb-2" style="color:var(--text-dim);">Top drivers (SHAP)</p>
+                                <p class="text-[11px] font-bold uppercase tracking-wider mb-2" style="color:var(--dim);">Top drivers (SHAP)</p>
                                 <div id="shapList" class="space-y-1.5 text-xs"></div>
                             </div>
                             <div class="card p-4" style="background:var(--surface-2);">
-                                <p class="text-[11px] font-bold uppercase tracking-wider mb-1.5" style="color:var(--text-dim);">Feature importance</p>
+                                <p class="text-[11px] font-bold uppercase tracking-wider mb-1.5" style="color:var(--dim);">Feature importance</p>
                                 <div class="h-40"><canvas id="importanceChart"></canvas></div>
                             </div>
-                            <p class="text-[10.5px] mt-4 leading-relaxed" style="color:#5a6472;">Model estimate only — not a causal prediction or employment decision. <span id="resultModel" class="mono"></span></p>
+                            <p class="text-[10.5px] mt-4 leading-relaxed" style="color:var(--faint);">Model estimate only — not a causal prediction or employment decision. <span id="resultModel" class="mono"></span></p>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- ===== ANALYTICS ===== -->
-            <section id="analytics" class="tab-content space-y-6">
+            <!-- ===== BULK SALARY PLANNING ===== -->
+            <section id="bulk" class="tab-content space-y-6">
                 <div>
-                    <h3 class="font-bold text-lg">Workforce Analytics</h3>
-                    <p class="text-sm mt-0.5" style="color:var(--text-dim);">Descriptive statistics computed from an uploaded CSV.</p>
+                    <h3 class="font-bold text-lg">Bulk Salary Planning</h3>
+                    <p class="text-sm mt-0.5" style="color:var(--dim);">Upload an employee spreadsheet → validate → estimate benchmarks → plan increments → export.</p>
                 </div>
-                <div class="card p-6">
-                    <div class="flex flex-wrap items-center gap-3">
-                        <input type="file" id="analyticsFile" accept=".csv" class="text-sm" style="color:var(--text-dim);">
-                        <button id="btnAnalytics" class="btn btn-primary">Analyze</button>
-                    </div>
-                    <p id="analyticsDisclaimer" class="hidden mt-3 text-xs" style="color:var(--text-dim);"></p>
+
+                <div class="stepper" id="bulkStepper">
+                    <div class="step active" data-step="1">1 · Upload</div>
+                    <div class="step" data-step="2">2 · Validate</div>
+                    <div class="step" data-step="3">3 · Results</div>
+                    <div class="step" data-step="4">4 · Scenario</div>
+                    <div class="step" data-step="5">5 · Export</div>
                 </div>
-                <div id="analyticsResults" class="hidden space-y-5">
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div class="card p-5 text-center"><p class="stat-label">Records</p><p id="anRows" class="stat-num mt-1">0</p></div>
-                        <div class="card p-5 text-center"><p class="stat-label">Departments</p><p id="anDepts" class="stat-num mt-1">0</p></div>
-                        <div class="card p-5 text-center"><p class="stat-label">Columns</p><p id="anCols" class="stat-num mt-1">0</p></div>
-                    </div>
-                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                        <div class="card p-6">
-                            <h3 class="font-bold text-sm mb-4">Department comparison</h3>
-                            <div class="overflow-x-auto"><table class="table-base"><thead><tr><th>Dept</th><th>Count</th><th>Avg Sat.</th><th>Avg Hours</th><th>Avg Salary</th><th>Attrition</th></tr></thead><tbody id="anDeptBody"></tbody></table></div>
+
+                <!-- Step 1: template + upload -->
+                <div id="bulkStep1" class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                    <div class="card p-6">
+                        <h4 class="font-bold text-sm mb-2">Download template</h4>
+                        <p class="text-xs mb-4" style="color:var(--dim);">Includes required model fields plus optional planning columns. Model version: <span id="tplModel" class="mono"></span></p>
+                        <div class="flex gap-2">
+                            <a class="btn btn-ghost btn-sm" href="/api/bulk/template?format=csv" download>CSV template</a>
+                            <a class="btn btn-ghost btn-sm" href="/api/bulk/template?format=xlsx" download>Excel template</a>
                         </div>
-                        <div class="card p-6">
-                            <h3 class="font-bold text-sm mb-4">Salary by department</h3>
-                            <div class="h-64"><canvas id="anSalaryChart"></canvas></div>
+                        <div id="tplColumns" class="mt-4 text-[11px] space-y-1" style="color:var(--dim);"></div>
+                    </div>
+                    <div class="card p-6">
+                        <h4 class="font-bold text-sm mb-4">Upload employee sheet</h4>
+                        <div id="dropzone" class="dropzone">
+                            <div class="text-3xl mb-2" style="opacity:.4;">⇪</div>
+                            <p class="font-semibold text-sm">Drop CSV or Excel file here</p>
+                            <p class="text-xs mt-1" style="color:var(--dim);">or click to browse · max 5 MB · up to 5,000 rows</p>
+                            <input type="file" id="bulkFile" accept=".csv,.xlsx" class="hidden">
+                        </div>
+                        <p id="bulkFileName" class="text-xs mt-3 mono hidden" style="color:var(--dim);"></p>
+                    </div>
+                </div>
+
+                <!-- Step 2: validation preview -->
+                <div id="bulkStep2" class="hidden space-y-5">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="card p-4 text-center"><p class="stat-label">Total rows</p><p id="vTotal" class="stat-num mt-1">0</p></div>
+                        <div class="card p-4 text-center"><p class="stat-label">Valid</p><p id="vValid" class="stat-num mt-1" style="color:var(--green);">0</p></div>
+                        <div class="card p-4 text-center"><p class="stat-label">Invalid</p><p id="vInvalid" class="stat-num mt-1" style="color:var(--red);">0</p></div>
+                        <div class="card p-4 text-center"><p class="stat-label">File</p><p id="vFile" class="text-sm font-bold mt-2 truncate px-2">—</p></div>
+                    </div>
+                    <div id="vErrorsWrap" class="card p-5 hidden">
+                        <h4 class="font-bold text-sm mb-3" style="color:var(--red);">Row errors (first 50)</h4>
+                        <div class="overflow-x-auto max-h-56 overflow-y-auto"><table class="table-base"><thead><tr><th>Row</th><th>EmpID</th><th>Employee</th><th>Error</th></tr></thead><tbody id="vErrorsBody"></tbody></table></div>
+                    </div>
+                    <div id="vValidWrap" class="card p-5 hidden">
+                        <h4 class="font-bold text-sm mb-3" style="color:var(--green);">Sample valid rows</h4>
+                        <div class="overflow-x-auto"><table class="table-base"><thead><tr><th>EmpID</th><th>Employee</th><th>Department</th><th>Job Title</th></tr></thead><tbody id="vValidBody"></tbody></table></div>
+                    </div>
+                    <div class="flex gap-3">
+                        <button id="btnBackUpload" class="btn btn-ghost">← Re-upload</button>
+                        <button id="btnProcess" class="btn btn-primary" disabled>Process salary estimates →</button>
+                    </div>
+                </div>
+
+                <!-- Step 3: results -->
+                <div id="bulkStep3" class="hidden space-y-5">
+                    <div class="card p-5">
+                        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                            <div>
+                                <h4 class="font-bold text-sm">Salary benchmark results</h4>
+                                <p class="text-xs" style="color:var(--dim);">Job <span id="jobIdLabel" class="mono"></span> · model <span id="jobModel" class="mono"></span></p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input type="text" id="bulkSearch" class="input !w-44 !py-2 text-xs" placeholder="Search employee…">
+                                <select id="bulkDeptFilter" class="input !w-40 !py-2 text-xs"><option value="">All departments</option></select>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto max-h-[420px] overflow-y-auto">
+                            <table class="table-base" id="bulkResultsTable">
+                                <thead><tr>
+                                    <th data-sort="EmpID">EmpID</th><th data-sort="Employee">Employee</th>
+                                    <th data-sort="Department">Department</th><th data-sort="Job_Title">Job Title</th>
+                                    <th data-sort="Current_Salary">Current</th><th data-sort="Estimated_Salary">Benchmark</th>
+                                    <th data-sort="Salary_Delta">Δ vs current</th><th>Status</th>
+                                </tr></thead>
+                                <tbody id="bulkResultsBody"></tbody>
+                            </table>
+                        </div>
+                        <div class="flex items-center justify-between mt-3">
+                            <span id="bulkPageInfo" class="text-xs" style="color:var(--dim);"></span>
+                            <div class="flex gap-2">
+                                <button id="btnBulkPrev" class="btn btn-ghost btn-sm">← Prev</button>
+                                <button id="btnBulkNext" class="btn btn-ghost btn-sm">Next →</button>
+                            </div>
                         </div>
                     </div>
-                    <div id="anInsights" class="space-y-3"></div>
+                    <div id="bulkErrorsCard" class="card p-5 hidden">
+                        <h4 class="font-bold text-sm mb-2" style="color:var(--red);">Skipped rows</h4>
+                        <div class="overflow-x-auto max-h-40 overflow-y-auto"><table class="table-base"><thead><tr><th>Row</th><th>EmpID</th><th>Employee</th><th>Error</th></tr></thead><tbody id="bulkErrorsBody"></tbody></table></div>
+                    </div>
+                    <div class="flex gap-3">
+                        <button id="btnToScenario" class="btn btn-primary">Plan increments →</button>
+                        <button id="btnExportNow" class="btn btn-ghost">Export results ↓</button>
+                    </div>
+                </div>
+
+                <!-- Step 4: scenario -->
+                <div id="bulkStep4" class="hidden space-y-5">
+                    <div class="card p-6">
+                        <h4 class="font-bold text-sm mb-1">Increment scenario</h4>
+                        <p class="text-xs mb-5" style="color:var(--dim);">HR-configured arithmetic on current salaries — <strong>not</strong> an ML prediction of deserved raises.</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="field-label" for="incPct">Annual increment %</label>
+                                <input class="input" type="number" id="incPct" value="10" step="0.5" min="0">
+                            </div>
+                            <div>
+                                <label class="field-label" for="incBudget">Budget cap (annual cost)</label>
+                                <input class="input" type="number" id="incBudget" placeholder="optional" min="0">
+                            </div>
+                            <div>
+                                <label class="field-label" for="incCap">Salary cap (monthly)</label>
+                                <input class="input" type="number" id="incCap" placeholder="optional" min="0">
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <label class="field-label" for="deptIncrements">Department overrides (JSON, optional)</label>
+                            <input class="input mono" type="text" id="deptIncrements" placeholder='{"Sales": 12, "Engineering": 8}'>
+                        </div>
+                        <div id="deptIncHint" class="text-[11px] mt-1" style="color:var(--faint);"></div>
+                        <button id="btnCalcScenario" class="btn btn-primary mt-5">Calculate scenario</button>
+                    </div>
+                    <div id="scenarioResults" class="hidden space-y-5">
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div class="card p-5"><p class="stat-label">Current monthly payroll</p><p id="sCurM" class="stat-num mt-1">—</p></div>
+                            <div class="card p-5"><p class="stat-label">Projected monthly payroll</p><p id="sProjM" class="stat-num mt-1" style="color:var(--accent);">—</p></div>
+                            <div class="card p-5"><p class="stat-label">Additional annual cost</p><p id="sAnnual" class="stat-num mt-1" style="color:var(--amber);">—</p></div>
+                            <div class="card p-5"><p class="stat-label">Current annual payroll</p><p id="sCurA" class="stat-num mt-1">—</p></div>
+                            <div class="card p-5"><p class="stat-label">Projected annual payroll</p><p id="sProjA" class="stat-num mt-1">—</p></div>
+                            <div class="card p-5"><p class="stat-label">Avg increment</p><p id="sAvgInc" class="stat-num mt-1">—</p></div>
+                        </div>
+                        <div id="budgetWarn" class="hidden card p-4" style="border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.06);">
+                            <p class="text-sm font-semibold" style="color:var(--amber);">⚠ Budget exceeded — projected annual cost surpasses the configured budget.</p>
+                        </div>
+                        <div class="card p-5">
+                            <h4 class="font-bold text-sm mb-3">Department impact</h4>
+                            <div class="overflow-x-auto"><table class="table-base"><thead><tr><th>Department</th><th>Employees</th><th>Current monthly</th><th>Projected monthly</th><th>Monthly Δ</th></tr></thead><tbody id="sDeptBody"></tbody></table></div>
+                        </div>
+                        <div id="sRowsWrap" class="card p-5">
+                            <h4 class="font-bold text-sm mb-3">Revised salaries</h4>
+                            <div class="overflow-x-auto max-h-72 overflow-y-auto"><table class="table-base"><thead><tr><th>EmpID</th><th>Employee</th><th>Department</th><th>Current</th><th>Increment</th><th>Revised</th><th>Monthly Δ</th><th>Annual Δ</th></tr></thead><tbody id="sRowsBody"></tbody></table></div>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <button id="btnBackResults" class="btn btn-ghost">← Back to results</button>
+                        <button id="btnExportScenario" class="btn btn-primary" disabled>Export with scenario ↓</button>
+                    </div>
+                </div>
+
+                <!-- Step 5: export -->
+                <div id="bulkStep5" class="hidden">
+                    <div class="card p-8 text-center">
+                        <div class="text-3xl mb-3" style="color:var(--green);">✓</div>
+                        <h4 class="font-bold text-lg mb-2">Salary plan ready</h4>
+                        <p class="text-sm mb-6" style="color:var(--dim);">Job <span id="doneJobId" class="mono"></span> processed. Download the results workbook or CSV.</p>
+                        <div class="flex flex-wrap justify-center gap-3">
+                            <a id="dlXlsx" class="btn btn-primary" href="#">Download Excel (.xlsx)</a>
+                            <a id="dlCsv" class="btn btn-ghost" href="#">Download CSV</a>
+                        </div>
+                        <p class="text-[11px] mt-5" style="color:var(--faint);">Excel contains: Salary Results · Department Summary · Increment Scenario · Validation Errors. Formula-injection safe.</p>
+                    </div>
                 </div>
             </section>
 
             <!-- ===== HISTORY ===== -->
             <section id="history" class="tab-content space-y-5">
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                        <h3 class="font-bold text-lg">Prediction History</h3>
-                        <p class="text-sm" style="color:var(--text-dim);">Stored model outputs — not verified outcomes.</p>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <input type="text" id="historySearch" class="input !w-48 !py-2 text-xs" placeholder="Search name…">
-                        <button id="btnClearHistory" class="btn btn-danger !text-xs !py-2 hidden">Clear all</button>
-                    </div>
+                <div>
+                    <h3 class="font-bold text-lg">Prediction History</h3>
+                    <p class="text-sm" style="color:var(--dim);">Individual predictions and bulk planning jobs stored locally.</p>
+                </div>
+                <div class="card p-5">
+                    <h4 class="font-bold text-sm mb-3">Bulk planning jobs</h4>
+                    <div class="overflow-x-auto"><table class="table-base"><thead><tr><th>Job</th><th>File</th><th>Date</th><th>Rows</th><th>Valid</th><th>Invalid</th><th>Model</th><th></th></tr></thead><tbody id="jobsBody"></tbody></table></div>
+                    <div id="jobsEmpty" class="empty-state hidden"><div class="ico">▦</div><p class="font-semibold text-sm">No bulk jobs yet</p></div>
                 </div>
                 <div class="card overflow-hidden">
+                    <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b" style="border-color:var(--border);">
+                        <h4 class="font-bold text-sm">Individual predictions</h4>
+                        <div class="flex items-center gap-2">
+                            <input type="text" id="historySearch" class="input !w-44 !py-1.5 text-xs" placeholder="Search name…">
+                            <button id="btnClearHistory" class="btn btn-danger btn-sm">Clear all</button>
+                        </div>
+                    </div>
                     <div class="overflow-x-auto">
                         <table class="table-base">
                             <thead><tr><th>Employee</th><th>Est. Salary</th><th>Risk</th><th>Type</th><th>Date</th><th></th></tr></thead>
                             <tbody id="historyBody"></tbody>
                         </table>
                     </div>
-                    <div id="historyEmpty" class="empty-state hidden">
-                        <div class="ico">≡</div><p class="font-semibold text-sm">No records found</p>
-                    </div>
+                    <div id="historyEmpty" class="empty-state hidden"><div class="ico">≡</div><p class="font-semibold text-sm">No records found</p></div>
                     <div class="flex items-center justify-between px-4 py-3 border-t" style="border-color:var(--border);">
-                        <button id="btnPrevPage" class="btn btn-ghost !text-xs !py-1.5">← Prev</button>
-                        <span id="historyPageInfo" class="text-xs" style="color:var(--text-dim);"></span>
-                        <button id="btnNextPage" class="btn btn-ghost !text-xs !py-1.5">Next →</button>
+                        <button id="btnPrevPage" class="btn btn-ghost btn-sm">← Prev</button>
+                        <span id="historyPageInfo" class="text-xs" style="color:var(--dim);"></span>
+                        <button id="btnNextPage" class="btn btn-ghost btn-sm">Next →</button>
                     </div>
                 </div>
             </section>
 
-            <!-- ===== SIMULATOR ===== -->
-            <section id="simulator" class="tab-content space-y-6">
+            <!-- ===== MODEL INFO ===== -->
+            <section id="model" class="tab-content space-y-6">
                 <div>
-                    <h3 class="font-bold text-lg">Retention Scenario Simulator</h3>
-                    <p class="text-sm mt-0.5" style="color:var(--text-dim);">Model-based what-if estimates — hypothetical, non-causal, never saved.</p>
+                    <h3 class="font-bold text-lg">Model Information</h3>
+                    <p class="text-sm mt-0.5" style="color:var(--dim);">Active model version, training data and honest evaluation metrics.</p>
                 </div>
                 <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
-                    <div class="card p-6 space-y-5">
-                        <div>
-                            <label class="field-label flex justify-between"><span>Monthly hours</span><span id="simHrsLabel" class="mono" style="color:var(--accent);">160</span></label>
-                            <input type="range" id="simHrs" min="80" max="400" value="160">
-                        </div>
-                        <div>
-                            <label class="field-label flex justify-between"><span>Baseline satisfaction</span><span id="simSatLabel" class="mono" style="color:var(--accent);">0.50</span></label>
-                            <input type="range" id="simSat" min="0" max="1" step="0.01" value="0.5">
-                        </div>
-                        <div class="pt-4 border-t" style="border-color:var(--border);">
-                            <label class="field-label flex justify-between"><span>Satisfaction boost</span><span id="simBoostLabel" class="mono" style="color:var(--green);">+0.20</span></label>
-                            <input type="range" id="simBoost" min="0" max="0.5" step="0.01" value="0.2">
-                        </div>
-                        <p class="text-[10.5px] leading-relaxed" style="color:#5a6472;">Baseline profile: Age 30 · Male · Engineering · Engineer · 5 yrs · no recent promotion. Results are model estimates under changed inputs only.</p>
-                    </div>
-                    <div class="card p-6 flex flex-col justify-center">
-                        <p class="stat-label text-center mb-6">Projected outcome</p>
-                        <div class="flex items-center justify-around mb-6">
-                            <div class="text-center"><p class="text-xs mb-1" style="color:var(--text-dim);">Before</p><p id="simBefore" class="text-3xl font-extrabold" style="color:var(--red);">—</p></div>
-                            <div class="text-2xl" style="color:#3a4553;">→</div>
-                            <div class="text-center"><p class="text-xs mb-1" style="color:var(--text-dim);">After</p><p id="simAfter" class="text-3xl font-extrabold" style="color:var(--green);">—</p></div>
-                        </div>
-                        <div class="rounded-xl p-4 text-center" style="background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);">
-                            <p class="text-xs font-bold" style="color:var(--green);">Estimated risk change</p>
-                            <p id="simImpact" class="text-xl font-extrabold mt-1" style="color:var(--green);">—</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ===== SETTINGS ===== -->
-            <section id="settings" class="tab-content space-y-6">
-                <div>
-                    <h3 class="font-bold text-lg">Account Settings</h3>
-                    <p class="text-sm mt-0.5" style="color:var(--text-dim);">Model version, dataset and usage notes.</p>
-                </div>
-                <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
-                    
                     <div class="card p-6">
-                        <h4 class="font-bold text-sm mb-4">Model & data</h4>
+                        <h4 class="font-bold text-sm mb-4">Active model</h4>
                         <div class="space-y-3 text-sm">
-                            <div class="flex justify-between"><span style="color:var(--text-dim);">Signed in as</span><span id="setUser" class="font-semibold">—</span></div>
-                            <div class="flex justify-between"><span style="color:var(--text-dim);">Role</span><span id="setRole" class="font-semibold">—</span></div>
-                            <div class="flex justify-between"><span style="color:var(--text-dim);">Active model</span><span id="setModel" class="font-semibold mono">—</span></div>
-                            <div class="flex justify-between"><span style="color:var(--text-dim);">Training data</span><span id="setDataset" class="font-semibold">—</span></div>
+                            <div class="flex justify-between"><span style="color:var(--dim);">Version</span><span id="miVersion" class="font-semibold mono">—</span></div>
+                            <div class="flex justify-between"><span style="color:var(--dim);">Training dataset</span><span id="miDataset" class="font-semibold">—</span></div>
+                            <div class="flex justify-between"><span style="color:var(--dim);">Salary unit</span><span id="miUnit" class="font-semibold">—</span></div>
+                            <div class="flex justify-between"><span style="color:var(--dim);">Features</span><span id="miFeatures" class="font-semibold mono text-xs">—</span></div>
                         </div>
                         <div class="mt-5 pt-4 border-t" style="border-color:var(--border);">
-                            <p class="text-[11px] leading-relaxed" style="color:var(--text-dim);">Salary estimates are model outputs for demonstration. They are not compensation recommendations and must not be used for employment decisions.</p>
+                            <p class="text-[11px] font-bold uppercase tracking-wider mb-2" style="color:var(--dim);">Caveats</p>
+                            <ul id="miCaveats" class="text-[11px] space-y-1" style="color:var(--dim);"></ul>
                         </div>
+                    </div>
+                    <div class="card p-6">
+                        <h4 class="font-bold text-sm mb-4">Supported categories</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                            <div><p class="font-bold mb-1" style="color:var(--dim);">DEPARTMENTS</p><div id="miDepts" class="space-y-0.5"></div></div>
+                            <div><p class="font-bold mb-1" style="color:var(--dim);">GENDERS</p><div id="miGenders" class="space-y-0.5"></div></div>
+                            <div><p class="font-bold mb-1" style="color:var(--dim);">JOB TITLES (with family)</p><div id="miTitles" class="space-y-0.5"></div></div>
+                        </div>
+                    </div>
+                    <div class="card p-6 xl:col-span-2">
+                        <h4 class="font-bold text-sm mb-2">Evaluation metrics (held-out test)</h4>
+                        <p class="text-[11px] mb-4" style="color:var(--dim);">Measured on the dataset's own test split — fictional sample data, not real-company accuracy.</p>
+                        <div id="miMetrics" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
                     </div>
                 </div>
             </section>

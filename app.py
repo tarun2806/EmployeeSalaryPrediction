@@ -110,6 +110,40 @@ class RateLimitHit(db.Model):
     count = db.Column(db.Integer, nullable=False, default=0)
 
 
+class BulkJob(db.Model):
+    """A bulk salary-planning run: uploaded sheet + per-employee results."""
+    __tablename__ = "bulk_jobs"
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(255))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    model_version = db.Column(db.String(50))
+    total_rows = db.Column(db.Integer, default=0)
+    valid_rows = db.Column(db.Integer, default=0)
+    invalid_rows = db.Column(db.Integer, default=0)
+    results_json = db.Column(db.Text)
+    errors_json = db.Column(db.Text)
+    scenario_json = db.Column(db.Text)
+    summary_json = db.Column(db.Text)
+
+
+# Job-title taxonomy grouping supported titles into families (UI metadata only).
+JOB_FAMILIES = {
+    "Research Scientist": "Research & Development",
+    "Research Director": "Research & Development",
+    "Laboratory Technician": "Research & Development",
+    "Sales Executive": "Sales",
+    "Sales Representative": "Sales",
+    "Healthcare Representative": "Sales",
+    "Human Resources": "Human Resources",
+    "Manager": "Management",
+    "Manufacturing Director": "Management",
+    "Engineer": "Engineering",
+    "Analyst": "Engineering",
+    "Accountant": "Finance",
+    "HR Specialist": "Human Resources",
+}
+
+
 # ---------------------------------------------------------------- helpers
 
 def load_all():
@@ -293,6 +327,300 @@ def _shap_explanation(X_arr):
     except Exception:
         log.exception("SHAP explanation failed")
         return None
+
+
+
+
+# ================================================================ bulk salary planning
+
+BULK_TEMPLATE_COLUMNS = [
+    "Employee_ID", "Employee_Name", "Department", "Job_Title", "Age",
+    "Years_Experience", "Years_At_Company", "Current_Monthly_Salary",
+    "Gender", "Satisfaction_Level", "Last_Promotion_Years", "Monthly_Hours",
+]
+BULK_TEMPLATE_NOTES = {
+    "Employee_ID": "Unique employee identifier (required, no duplicates)",
+    "Employee_Name": "Display name (optional)",
+    "Department": "Must match an active model category",
+    "Job_Title": "Must match an active model category",
+    "Age": "16-100",
+    "Years_Experience": "Total years of experience (used if Years_At_Company empty)",
+    "Years_At_Company": "Tenure at company -> model Experience feature",
+    "Current_Monthly_Salary": "Optional; enables increment/payroll planning",
+    "Gender": "Must match an active model category",
+    "Satisfaction_Level": "0.0 - 1.0",
+    "Last_Promotion_Years": "Years since last promotion; <=5 maps to Promotion=Yes",
+    "Monthly_Hours": "Optional; used only if the active model consumes Hours",
+}
+
+
+def _read_upload(file):
+    """Parse uploaded CSV or XLSX into a DataFrame. Returns (df, error_response)."""
+    name = (file.filename or "").lower()
+    raw = file.read(MAX_CONTENT_LENGTH + 1)
+    if len(raw) > MAX_CONTENT_LENGTH:
+        return None, _json_error("File exceeds 5 MB limit", 413, "FILE_TOO_LARGE")
+    try:
+        if name.endswith(".csv"):
+            df = pd.read_csv(io.BytesIO(raw))
+        elif name.endswith(".xlsx"):
+            df = pd.read_excel(io.BytesIO(raw))
+        else:
+            return None, _json_error("Only .csv and .xlsx files are accepted", 415, "UNSUPPORTED_MEDIA_TYPE")
+    except Exception:
+        return None, _json_error("File could not be parsed", 422, "MALFORMED_FILE")
+    if df is None or len(df) == 0:
+        return None, _json_error("File contains no data rows", 422, "EMPTY_FILE")
+    if len(df) > MAX_BULK_ROWS:
+        return None, _json_error(f"Too many rows (max {MAX_BULK_ROWS})", 413, "TOO_MANY_ROWS")
+    return df, None
+
+
+def _bulk_row_to_payload(row, idx):
+    """Map a spreadsheet row to the model payload. Returns (payload, missing_fields)."""
+    def cell(*names):
+        for n in names:
+            if n in row.index and pd.notna(row[n]) and str(row[n]).strip() != "":
+                return row[n]
+        return None
+    missing = []
+    dept = cell("Department")
+    title = cell("Job_Title")
+    age = cell("Age")
+    exp = cell("Years_At_Company", "Years_Experience", "Experience")
+    sat = cell("Satisfaction_Level", "Satisfaction")
+    gender = cell("Gender")
+    for label, val in [("Department", dept), ("Job_Title", title), ("Age", age),
+                       ("Experience", exp), ("Satisfaction", sat), ("Gender", gender)]:
+        if val is None:
+            missing.append(label)
+    promo_years = cell("Last_Promotion_Years", "Promotion_Last_5Years")
+    if promo_years is not None:
+        try:
+            promotion = "Yes" if float(promo_years) <= 5 else "No"
+        except (TypeError, ValueError):
+            promotion = "Yes" if str(promo_years).strip().lower() in ("1", "1.0", "yes", "true") else "No"
+    else:
+        promotion = "No"
+    payload = {
+        "Name": str(cell("Employee_Name") or cell("Employee_ID") or f"row-{idx}"),
+        "Employee_ID": cell("Employee_ID"),
+        "Employee_Name": cell("Employee_Name"),
+        "Current_Monthly_Salary": cell("Current_Monthly_Salary", "Salary"),
+        "Age": age, "Experience": exp, "Satisfaction": sat,
+        "Gender": gender, "Department": dept, "Job_Title": title,
+        "Promotion": promotion,
+        "Hours": cell("Monthly_Hours", "Average_Monthly_Hours", "Hours"),
+    }
+    return payload, missing
+
+
+def _validate_bulk_df(df):
+    """Returns (valid_entries, errors). Each entry: {row_no, payload, emp_id, emp_name, current_salary}."""
+    valid, errors = [], []
+    seen_ids = set()
+    cats = active_categories() if models else {}
+    for idx, row in df.iterrows():
+        row_no = int(idx) + 2
+        payload, missing = _bulk_row_to_payload(row, row_no)
+        emp_id = payload.get("Employee_ID")
+        emp_name = payload.get("Employee_Name") or payload["Name"]
+        if emp_id is not None:
+            emp_id = str(emp_id).strip()
+            if emp_id in seen_ids:
+                errors.append({"row": row_no, "EmpID": emp_id, "Employee": emp_name,
+                               "error": "duplicate Employee_ID"})
+                continue
+            seen_ids.add(emp_id)
+        if missing:
+            errors.append({"row": row_no, "EmpID": emp_id, "Employee": emp_name,
+                           "error": "missing required fields: " + ", ".join(missing)})
+            continue
+        cur = payload.get("Current_Monthly_Salary")
+        cur_val = None
+        if cur is not None:
+            try:
+                cur_val = float(cur)
+                if cur_val < 0:
+                    raise ValueError
+            except (TypeError, ValueError):
+                errors.append({"row": row_no, "EmpID": emp_id, "Employee": emp_name,
+                               "error": "invalid Current_Monthly_Salary"})
+                continue
+        # Build a predict payload; _validate_predict_payload enforces categories/ranges.
+        pred_payload = {k: payload[k] for k in
+                        ("Name", "Age", "Experience", "Satisfaction", "Gender",
+                         "Department", "Job_Title", "Promotion")}
+        pred_payload["Hours"] = payload.get("Hours") if payload.get("Hours") is not None else 160
+        clean, verr = _validate_predict_payload(pred_payload)
+        if verr:
+            errors.append({"row": row_no, "EmpID": emp_id, "Employee": emp_name,
+                           "error": "validation failed"})
+            continue
+        valid.append({"row_no": row_no, "payload": clean, "emp_id": emp_id,
+                      "emp_name": emp_name, "current_salary": cur_val,
+                      "department": clean["Department"], "job_title": clean["Job_Title"]})
+    return valid, errors
+
+
+def _process_bulk_entries(entries):
+    results = []
+    for e in entries:
+        try:
+            X = _encode_row(e["payload"])
+            risk, sal = _predict_row(X)
+            results.append({
+                "row": e["row_no"], "EmpID": e["emp_id"], "Employee": e["emp_name"],
+                "Department": e["department"], "Job_Title": e["job_title"],
+                "Current_Salary": e["current_salary"],
+                "Estimated_Salary": round(sal, 2),
+                "Salary_Delta": round(sal - e["current_salary"], 2) if e["current_salary"] is not None else None,
+                "Risk": round(risk, 4),
+                "Status": "ok", "Model": active_version,
+            })
+        except Exception:
+            log.exception("Bulk row %s prediction failed", e["row_no"])
+            results.append({"row": e["row_no"], "EmpID": e["emp_id"], "Employee": e["emp_name"],
+                            "Department": e["department"], "Job_Title": e["job_title"],
+                            "Current_Salary": e["current_salary"],
+                            "Estimated_Salary": None, "Status": "failed",
+                            "Error": "prediction failed"})
+    return results
+
+
+def _bulk_summary(results, errors, total):
+    ok = [r for r in results if r["Status"] == "ok"]
+    with_sal = [r for r in ok if r["Current_Salary"] is not None]
+    def avg(xs): return round(sum(xs) / len(xs), 2) if xs else None
+    return {
+        "total_rows": total, "processed": len(results), "succeeded": len(ok),
+        "failed": len(results) - len(ok), "validation_errors": len(errors),
+        "avg_estimated_salary": avg([r["Estimated_Salary"] for r in ok]),
+        "avg_current_salary": avg([r["Current_Salary"] for r in with_sal]),
+        "employees_with_salary": len(with_sal),
+    }
+
+
+def _scenario_calc(results, cfg):
+    """Transparent HR increment scenario — arithmetic, NOT an ML prediction."""
+    pct = float(cfg.get("increment_pct", 0))
+    dept_pct = {str(k): float(v) for k, v in (cfg.get("dept_increments") or {}).items()}
+    budget = cfg.get("budget")
+    cap = cfg.get("cap")
+    rows, cur_monthly = [], 0.0
+    dept_totals = {}
+    for r in results:
+        if r["Status"] != "ok" or r.get("Current_Salary") is None:
+            continue
+        cur = float(r["Current_Salary"])
+        p = dept_pct.get(r["Department"], pct)
+        revised = cur * (1 + p / 100)
+        if cap is not None:
+            revised = min(revised, float(cap))
+        diff_m = revised - cur
+        cur_monthly += cur
+        d = dept_totals.setdefault(r["Department"], {"current": 0.0, "projected": 0.0, "employees": 0})
+        d["current"] += cur; d["projected"] += revised; d["employees"] += 1
+        rows.append({**r, "Increment_Pct": p, "Revised_Salary": round(revised, 2),
+                     "Monthly_Diff": round(diff_m, 2), "Annual_Diff": round(diff_m * 12, 2)})
+    proj_monthly = sum(d["projected"] for d in dept_totals.values())
+    annual_cost = (proj_monthly - cur_monthly) * 12
+    return {
+        "rows": rows,
+        "current_monthly_payroll": round(cur_monthly, 2),
+        "projected_monthly_payroll": round(proj_monthly, 2),
+        "current_annual_payroll": round(cur_monthly * 12, 2),
+        "projected_annual_payroll": round(proj_monthly * 12, 2),
+        "total_additional_annual_cost": round(annual_cost, 2),
+        "avg_increment_pct": round(pct, 2),
+        "department_impact": {k: {"current_monthly": round(v["current"], 2),
+                                  "projected_monthly": round(v["projected"], 2),
+                                  "employees": v["employees"]}
+                              for k, v in dept_totals.items()},
+        "budget": budget, "budget_exceeded": bool(budget is not None and annual_cost > float(budget)),
+        "cap": cap,
+        "disclaimer": "HR-configured increment arithmetic only — not an ML prediction of deserved salary.",
+    }
+
+
+def _safe_cell(v):
+    """Prevent spreadsheet formula injection in exported text cells."""
+    if isinstance(v, str) and v[:1] in ("=", "+", "-", "@"):
+        return "'" + v
+    return v
+
+
+def _export_xlsx(job, results, errors, scenario):
+    """Build an .xlsx workbook: Results / Dept Summary / Scenario / Errors."""
+    from openpyxl import Workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Salary Results"
+    headers = ["EmpID", "Employee", "Department", "Job_Title", "Current_Salary",
+               "Estimated_Salary", "Salary_Delta", "Risk", "Status"]
+    ws.append([_safe_cell(h) for h in headers])
+    for r in results:
+        ws.append([_safe_cell(r.get(h)) for h in
+                   ["EmpID", "Employee", "Department", "Job_Title", "Current_Salary",
+                    "Estimated_Salary", "Salary_Delta", "Risk", "Status"]])
+    ws2 = wb.create_sheet("Department Summary")
+    ws2.append(["Department", "Employees", "Avg_Estimated_Salary", "Avg_Current_Salary"])
+    dept = {}
+    for r in results:
+        if r["Status"] != "ok":
+            continue
+        d = dept.setdefault(r["Department"], {"n": 0, "est": [], "cur": []})
+        d["n"] += 1; d["est"].append(r["Estimated_Salary"])
+        if r["Current_Salary"] is not None: d["cur"].append(r["Current_Salary"])
+    for k, v in dept.items():
+        ws2.append([_safe_cell(k), v["n"],
+                    round(sum(v["est"]) / len(v["est"]), 2) if v["est"] else None,
+                    round(sum(v["cur"]) / len(v["cur"]), 2) if v["cur"] else None])
+    if scenario:
+        ws3 = wb.create_sheet("Increment Scenario")
+        ws3.append(["Metric", "Value"])
+        for k in ("current_monthly_payroll", "projected_monthly_payroll",
+                  "current_annual_payroll", "projected_annual_payroll",
+                  "total_additional_annual_cost", "avg_increment_pct",
+                  "budget_exceeded"):
+            ws3.append([k, scenario.get(k)])
+        ws3.append([])
+        ws3.append(["Department", "Current_Monthly", "Projected_Monthly", "Employees"])
+        for k, v in (scenario.get("department_impact") or {}).items():
+            ws3.append([_safe_cell(k), v["current_monthly"], v["projected_monthly"], v["employees"]])
+    if errors:
+        ws4 = wb.create_sheet("Validation Errors")
+        ws4.append(["Row", "EmpID", "Employee", "Error"])
+        for e_ in errors:
+            ws4.append([e_.get("row"), _safe_cell(e_.get("EmpID")), _safe_cell(e_.get("Employee")), _safe_cell(e_.get("error"))])
+    bio = io.BytesIO()
+    wb.save(bio)
+    return bio.getvalue()
+
+
+def _export_csv(results, errors, scenario):
+    import csv as _csv
+    out = io.StringIO()
+    w = _csv.writer(out)
+    w.writerow(["EmpID", "Employee", "Department", "Job_Title", "Current_Salary",
+                "Estimated_Salary", "Salary_Delta", "Risk", "Status"])
+    for r in results:
+        w.writerow([r.get("EmpID"), r.get("Employee"), r.get("Department"),
+                    r.get("Job_Title"), r.get("Current_Salary"),
+                    r.get("Estimated_Salary"), r.get("Salary_Delta"),
+                    r.get("Risk"), r.get("Status")])
+    if scenario:
+        w.writerow([])
+        w.writerow(["SCENARIO", "current_monthly_payroll", scenario.get("current_monthly_payroll")])
+        w.writerow(["SCENARIO", "projected_monthly_payroll", scenario.get("projected_monthly_payroll")])
+        w.writerow(["SCENARIO", "total_additional_annual_cost", scenario.get("total_additional_annual_cost")])
+    if errors:
+        w.writerow([])
+        w.writerow(["VALIDATION ERRORS"])
+        w.writerow(["Row", "EmpID", "Employee", "Error"])
+        for e_ in errors:
+            w.writerow([e_.get("row"), e_.get("EmpID"), e_.get("Employee"), e_.get("error")])
+    return out.getvalue()
 
 
 # ---------------------------------------------------------------- app factory
@@ -512,106 +840,11 @@ def create_app(testing=False):
             "dataset": active_meta.get("dataset", "synthetic_demo"),
             "metrics": active_meta.get("evaluation", {}),
             "caveats": active_meta.get("caveats", []),
-        })
-
-    # ---------------------------------------------------------- simulation
-
-    @app.route("/api/simulate", methods=["POST"])
-    def simulate():
-        if not rate_allow(f"sim:{_client_ip()}", SIM_RATE_LIMIT, 60):
-            return _json_error("Simulation rate limit exceeded", 429, "RATE_LIMITED")
-        if not load_all():
-            return _json_error("Prediction models unavailable", 503, "MODELS_UNAVAILABLE")
-        data = request.get_json(silent=True)
-        clean, err = _validate_predict_payload(data)
-        if err:
-            return err
-        sat_boost, e = _as_float(data.get("satisfaction_boost", 0.0), "satisfaction_boost", -1.0, 1.0)
-        if e: return e
-        hours_delta, e = _as_int(data.get("hours_delta", 0), "hours_delta", -200, 200)
-        if e: return e
-
-        scenario = dict(clean)
-        scenario["Satisfaction"] = min(1.0, max(0.0, clean["Satisfaction"] + sat_boost))
-        if "Hours" in active_feature_fields():
-            scenario["Hours"] = max(0, min(500, clean.get("Hours", 160) + hours_delta))
-
-        try:
-            risk_b, sal_b = _predict_row(_encode_row(clean))
-            risk_s, sal_s = _predict_row(_encode_row(scenario))
-        except Exception:
-            log.exception("Simulation failed")
-            return _json_error("Simulation failed", 500, "SIMULATION_ERROR")
-
-        return jsonify({
-            "baseline": {"risk": round(risk_b, 4), "salary": round(sal_b, 2)},
-            "scenario": {"risk": round(risk_s, 4), "salary": round(sal_s, 2)},
-            "delta_risk": round(risk_s - risk_b, 4),
-            "delta_salary": round(sal_s - sal_b, 2),
-            "salary_unit": active_meta.get("salary_unit", "inr_monthly"),
-            "model_version": active_version,
-            "disclaimer": ("Model-based estimate under changed inputs only. A predictive "
-                           "model cannot prove that a policy change causes attrition "
-                           "or salary outcomes."),
+            "job_families": {t: JOB_FAMILIES.get(t, "Other") for t in active_categories().get("Job_Title", [])},
         })
 
     # ---------------------------------------------------------- analytics
 
-    @app.route("/api/analytics/upload", methods=["POST"])
-    def analytics_upload():
-        if not rate_allow(f"analytics:{_client_ip()}", ANALYTICS_RATE_LIMIT, 60):
-            return _json_error("Analytics rate limit exceeded", 429, "RATE_LIMITED")
-        if "file" not in request.files:
-            return _json_error("No file part", 400, "NO_FILE")
-        file = request.files["file"]
-        if not file or not file.filename or not file.filename.lower().endswith(".csv"):
-            return _json_error("Only .csv files are accepted", 415, "UNSUPPORTED_MEDIA_TYPE")
-        raw = file.read(MAX_CONTENT_LENGTH + 1)
-        if len(raw) > MAX_CONTENT_LENGTH:
-            return _json_error("File exceeds 5 MB limit", 413, "FILE_TOO_LARGE")
-        try:
-            df = pd.read_csv(io.BytesIO(raw))
-        except Exception:
-            return _json_error("File is not a valid CSV", 422, "MALFORMED_CSV")
-        if len(df) == 0 or len(df) > MAX_BULK_ROWS:
-            return _json_error("Invalid row count", 422, "BAD_ROWS")
-
-        stats = {"rows": int(len(df)), "columns": int(df.shape[1])}
-        group_col = "Department" if "Department" in df.columns else None
-        if group_col:
-            dept = {}
-            for name, grp in df.groupby(group_col):
-                entry = {"count": int(len(grp))}
-                for col, key in [("Satisfaction_Level", "avg_satisfaction"),
-                                 ("Average_Monthly_Hours", "avg_hours"),
-                                 ("Salary", "avg_salary"), ("Attrition", "attrition_rate")]:
-                    if col in grp.columns:
-                        vals = pd.to_numeric(grp[col], errors="coerce")
-                        entry[key] = round(float(vals.mean()), 4) if vals.notna().any() else None
-                dept[str(name)] = entry
-            stats["by_department"] = dept
-        numeric_cols = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
-        stats["numeric_summary"] = {
-            c: {"mean": round(float(df[c].mean()), 2), "min": float(df[c].min()),
-                "max": float(df[c].max())}
-            for c in numeric_cols[:10]
-        }
-
-        insights = []
-        if "Attrition" in df.columns and group_col:
-            rates = {k: v.get("attrition_rate") for k, v in stats.get("by_department", {}).items()
-                     if v.get("attrition_rate") is not None}
-            if rates:
-                worst = max(rates, key=rates.get)
-                insights.append({
-                    "type": "attrition_concentration",
-                    "message": f"Department '{worst}' shows the highest attrition rate "
-                               f"({rates[worst]:.1%}) in this file. Review as a hypothesis, "
-                               "not a confirmed finding.",
-                })
-        log.info("Analytics upload: %d rows", stats["rows"])
-        return jsonify({"stats": stats, "insights": insights,
-                        "disclaimer": "Descriptive statistics on uploaded data only."})
 
     @app.route("/api/analytics/summary", methods=["GET"])
     def analytics_summary():
@@ -630,6 +863,161 @@ def create_app(testing=False):
         })
 
     # ---------------------------------------------------------- health
+
+
+    # ---------------------------------------------------------- bulk salary planning
+
+    @app.route("/api/bulk/template", methods=["GET"])
+    def bulk_template():
+        fmt = request.args.get("format", "csv")
+        load_all()
+        if fmt == "xlsx":
+            from openpyxl import Workbook
+            wb = Workbook(); ws = wb.active; ws.title = "Template"
+            ws.append(BULK_TEMPLATE_COLUMNS)
+            ws.append(["E001", "Example Employee", (active_categories().get("Department") or ["Engineering"])[0],
+                       (active_categories().get("Job_Title") or ["Engineer"])[0], 30, 5, 3, 50000,
+                       (active_categories().get("Gender") or ["Male"])[0], 0.7, 2, 160])
+            ws2 = wb.create_sheet("Column Guide")
+            ws2.append(["Column", "Description", "Required"])
+            for c in BULK_TEMPLATE_COLUMNS:
+                ws2.append([_safe_cell(c), BULK_TEMPLATE_NOTES.get(c, ""),
+                            "yes" if c in ("Department", "Job_Title", "Age", "Years_At_Company", "Gender", "Satisfaction_Level") else "no"])
+            bio = io.BytesIO(); wb.save(bio)
+            from flask import Response
+            return Response(bio.getvalue(), mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            headers={"Content-Disposition": "attachment; filename=salary_template.xlsx"})
+        import csv as _csv
+        out = io.StringIO(); w = _csv.writer(out)
+        w.writerow(BULK_TEMPLATE_COLUMNS)
+        w.writerow(["E001", "Example Employee",
+                    (active_categories().get("Department") or ["Engineering"])[0],
+                    (active_categories().get("Job_Title") or ["Engineer"])[0],
+                    30, 5, 3, 50000,
+                    (active_categories().get("Gender") or ["Male"])[0], 0.7, 2, 160])
+        w.writerow([])
+        w.writerow(["COLUMN GUIDE"])
+        w.writerow(["Column", "Description", "Required"])
+        for c in BULK_TEMPLATE_COLUMNS:
+            w.writerow([c, BULK_TEMPLATE_NOTES.get(c, ""),
+                        "yes" if c in ("Department", "Job_Title", "Age", "Years_At_Company", "Gender", "Satisfaction_Level") else "no"])
+        from flask import Response
+        return Response(out.getvalue(), mimetype="text/csv",
+                        headers={"Content-Disposition": "attachment; filename=salary_template.csv"})
+
+    @app.route("/api/bulk/validate", methods=["POST"])
+    def bulk_validate():
+        """Parse + validate an uploaded sheet WITHOUT running predictions."""
+        if not rate_allow(f"bulkval:{_client_ip()}", 60, 60):
+            return _json_error("Rate limit exceeded", 429, "RATE_LIMITED")
+        if not load_all():
+            return _json_error("Models unavailable", 503, "MODELS_UNAVAILABLE")
+        if "file" not in request.files:
+            return _json_error("No file part", 400, "NO_FILE")
+        df, err = _read_upload(request.files["file"])
+        if err: return err
+        valid, errors = _validate_bulk_df(df)
+        cats = active_categories()
+        return jsonify({
+            "filename": request.files["file"].filename,
+            "total_rows": int(len(df)),
+            "valid_rows": len(valid), "invalid_rows": len(errors),
+            "sample_valid": [{"EmpID": e["emp_id"], "Employee": e["emp_name"],
+                              "Department": e["department"], "Job_Title": e["job_title"]}
+                             for e in valid[:10]],
+            "errors": errors[:100],
+            "supported_departments": sorted(cats["Department"]),
+            "supported_job_titles": sorted(cats["Job_Title"]),
+            "model_version": active_version,
+        })
+
+    @app.route("/api/bulk/process", methods=["POST"])
+    def bulk_process():
+        """Validate + predict + persist a BulkJob. Returns job id + summary."""
+        if not rate_allow(f"bulkproc:{_client_ip()}", BULK_RATE_LIMIT, 60):
+            return _json_error("Bulk processing rate limit exceeded", 429, "RATE_LIMITED")
+        if not load_all():
+            return _json_error("Models unavailable", 503, "MODELS_UNAVAILABLE")
+        if "file" not in request.files:
+            return _json_error("No file part", 400, "NO_FILE")
+        df, err = _read_upload(request.files["file"])
+        if err: return err
+        valid, errors = _validate_bulk_df(df)
+        results = _process_bulk_entries(valid)
+        summary = _bulk_summary(results, errors, len(df))
+        job = BulkJob(
+            filename=(request.files["file"].filename or "upload")[:255],
+            model_version=active_version,
+            total_rows=len(df), valid_rows=len(valid), invalid_rows=len(errors),
+            results_json=json.dumps(results), errors_json=json.dumps(errors),
+            summary_json=json.dumps(summary),
+        )
+        db.session.add(job); db.session.commit()
+        log.info("Bulk job %s: %s", job.id, summary)
+        return jsonify({"job_id": job.id, "summary": summary,
+                        "sample_results": results[:10],
+                        "sample_errors": errors[:10]})
+
+    @app.route("/api/bulk/jobs", methods=["GET"])
+    def bulk_jobs_list():
+        rows = (BulkJob.query.order_by(BulkJob.created_at.desc(), BulkJob.id.desc())
+                .limit(50).all())
+        return jsonify({"items": [{
+            "id": j.id, "filename": j.filename,
+            "created_at": j.created_at.strftime("%Y-%m-%d %H:%M:%S") if j.created_at else None,
+            "model_version": j.model_version, "total_rows": j.total_rows,
+            "valid_rows": j.valid_rows, "invalid_rows": j.invalid_rows,
+            "summary": json.loads(j.summary_json) if j.summary_json else None,
+        } for j in rows]})
+
+    @app.route("/api/bulk/jobs/<int:job_id>", methods=["GET"])
+    def bulk_job_detail(job_id):
+        job = db.session.get(BulkJob, job_id)
+        if job is None:
+            return _json_error("Job not found", 404, "NOT_FOUND")
+        return jsonify({
+            "id": job.id, "filename": job.filename,
+            "created_at": job.created_at.strftime("%Y-%m-%d %H:%M:%S") if job.created_at else None,
+            "model_version": job.model_version, "total_rows": job.total_rows,
+            "valid_rows": job.valid_rows, "invalid_rows": job.invalid_rows,
+            "summary": json.loads(job.summary_json) if job.summary_json else None,
+            "results": json.loads(job.results_json) if job.results_json else [],
+            "errors": json.loads(job.errors_json) if job.errors_json else [],
+            "scenario": json.loads(job.scenario_json) if job.scenario_json else None,
+        })
+
+    @app.route("/api/bulk/jobs/<int:job_id>/scenario", methods=["POST"])
+    def bulk_job_scenario(job_id):
+        """Compute an HR increment scenario for a stored job (arithmetic only)."""
+        job = db.session.get(BulkJob, job_id)
+        if job is None:
+            return _json_error("Job not found", 404, "NOT_FOUND")
+        data = request.get_json(silent=True) or {}
+        results = json.loads(job.results_json) if job.results_json else []
+        try:
+            scenario = _scenario_calc(results, data)
+        except (TypeError, ValueError):
+            return _err("increment_pct", "must be a number")
+        job.scenario_json = json.dumps(scenario)
+        db.session.commit()
+        return jsonify(scenario)
+
+    @app.route("/api/bulk/jobs/<int:job_id>/export", methods=["GET"])
+    def bulk_job_export(job_id):
+        job = db.session.get(BulkJob, job_id)
+        if job is None:
+            return _json_error("Job not found", 404, "NOT_FOUND")
+        fmt = request.args.get("format", "xlsx")
+        results = json.loads(job.results_json) if job.results_json else []
+        errors = json.loads(job.errors_json) if job.errors_json else []
+        scenario = json.loads(job.scenario_json) if job.scenario_json else None
+        from flask import Response
+        if fmt == "csv":
+            return Response(_export_csv(results, errors, scenario), mimetype="text/csv",
+                            headers={"Content-Disposition": f"attachment; filename=salary_results_job{job_id}.csv"})
+        return Response(_export_xlsx(job, results, errors, scenario),
+                        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        headers={"Content-Disposition": f"attachment; filename=salary_results_job{job_id}.xlsx"})
 
     @app.route("/api/health", methods=["GET"])
     def health():

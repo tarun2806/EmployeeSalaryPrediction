@@ -15,7 +15,7 @@ import pandas as pd
 
 BASE = __import__("pathlib").Path(__file__).resolve().parent.parent
 
-SYNTHETIC_CSV = BASE / "employee_attrition_data.csv"
+SYNTHETIC_CSV = BASE / "data" / "employee_attrition_data.csv"
 IBM_CSV = BASE / "data" / "ibm_hr_attrition.csv"
 
 # Columns the demo app consumes (Dataset A contract)

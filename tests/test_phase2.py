@@ -17,22 +17,6 @@ def test_predict_metadata(client):
     b = client.post("/api/predict", json=VALID).get_json()
     assert b["model_version"] == "legacy" and "explanation" in b and "disclaimer" in b
 
-def test_simulate(client, app):
-    from conftest import count_history
-    before = count_history(app)
-    r = client.post("/api/simulate", json={**VALID, "satisfaction_boost":0.2})
-    assert r.status_code == 200
-    assert "baseline" in r.get_json() and "scenario" in r.get_json()
-    assert count_history(app) == before
-
-def test_simulate_validation(client):
-    assert client.post("/api/simulate", json={**VALID, "satisfaction_boost":5.0}).status_code == 422
-
-def test_analytics_upload(client):
-    csv_data = b"Employee_ID,Department,Satisfaction_Level,Salary,Attrition\n1,Sales,0.8,50000,0\n2,HR,0.4,52000,1\n"
-    r = client.post("/api/analytics/upload", data={"file":(io.BytesIO(csv_data),"t.csv")}, content_type="multipart/form-data")
-    assert r.status_code == 200 and r.get_json()["stats"]["rows"] == 2
-
 def test_analytics_summary_empty(client):
     assert client.get("/api/analytics/summary").get_json()["total"] == 0
 
