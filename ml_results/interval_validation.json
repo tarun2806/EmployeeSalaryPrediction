@@ -4,5 +4,133 @@
   "model_mean_width_inr": 1114284.0,
   "empirical_coverage": 0.803,
   "empirical_width_inr": 2010800.0,
-  "note": "p10/p90 quantile models; coverage on untouched 20% holdout"
+  "note": "p10/p90 quantile models; coverage on untouched 20% holdout",
+  "coverage_by_family": {
+    "sales": {
+      "n": 328,
+      "coverage": 0.765
+    },
+    "other": {
+      "n": 326,
+      "coverage": 0.81
+    },
+    "software-eng": {
+      "n": 617,
+      "coverage": 0.789
+    },
+    "marketing": {
+      "n": 93,
+      "coverage": 0.839
+    },
+    "data": {
+      "n": 94,
+      "coverage": 0.787
+    },
+    "finance": {
+      "n": 102,
+      "coverage": 0.784
+    },
+    "design": {
+      "n": 92,
+      "coverage": 0.815
+    },
+    "customer-service": {
+      "n": 69,
+      "coverage": 0.841
+    },
+    "manufacturing": {
+      "n": 73,
+      "coverage": 0.822
+    },
+    "hr": {
+      "n": 77,
+      "coverage": 0.74
+    },
+    "admin": {
+      "n": 58,
+      "coverage": 0.741
+    }
+  },
+  "coverage_by_city_top": {
+    "Bengaluru": {
+      "n": 549,
+      "coverage": 0.785
+    },
+    "Hyderabad": {
+      "n": 271,
+      "coverage": 0.779
+    },
+    "Pune": {
+      "n": 174,
+      "coverage": 0.782
+    },
+    "Mumbai": {
+      "n": 241,
+      "coverage": 0.755
+    },
+    "Ahmedabad": {
+      "n": 101,
+      "coverage": 0.851
+    },
+    "Gurugram": {
+      "n": 153,
+      "coverage": 0.843
+    },
+    "Chennai": {
+      "n": 135,
+      "coverage": 0.77
+    }
+  },
+  "coverage_by_exp_band": {
+    "2-3 yrs": {
+      "n": 631,
+      "coverage": 0.77
+    },
+    "11-15 yrs": {
+      "n": 71,
+      "coverage": 0.761
+    },
+    "4-6 yrs": {
+      "n": 615,
+      "coverage": 0.795
+    },
+    "0-1 yrs": {
+      "n": 564,
+      "coverage": 0.794
+    },
+    "7-10 yrs": {
+      "n": 342,
+      "coverage": 0.801
+    }
+  },
+  "coverage_by_seniority": {
+    "mid": {
+      "n": 659,
+      "coverage": 0.771
+    },
+    "lead": {
+      "n": 213,
+      "coverage": 0.789
+    },
+    "senior": {
+      "n": 435,
+      "coverage": 0.821
+    },
+    "entry": {
+      "n": 420,
+      "coverage": 0.8
+    },
+    "manager": {
+      "n": 315,
+      "coverage": 0.768
+    },
+    "intern": {
+      "n": 101,
+      "coverage": 0.822
+    },
+    "director": {
+      "n": 68,
+      "coverage": 0.691
+    }
+  }
 }

@@ -87,3 +87,19 @@ def test_rollback_to_legacy(tmp_path, monkeypatch):
     c = create_app(testing=True).test_client()
     m = c.get("/api/model").get_json()
     assert m["kind"] == "standard" and m["active_version"] == "legacy"
+
+
+def test_preprocess_persisted_not_recomputed():
+    """Inference must use persisted preprocess.json, not mutable CSVs."""
+    import json as _j
+    pre = _j.loads((ii.MODEL_DIR / "preprocess.json").read_text())
+    assert len(pre["top_cities"]) == 40 and len(pre["top_industries"]) == 15
+    assert "Bengaluru" in pre["top_cities"]
+    # _load exposes the persisted mapping
+    assert "Bengaluru" in ii._load()["top_cities"]
+
+
+def test_quantile_coverage_by_subgroup_recorded():
+    v = json.loads((ii.BASE / "ml_results" / "interval_validation.json").read_text())
+    assert "coverage_by_family" in v and "coverage_by_exp_band" in v
+    assert all(0.5 < f["coverage"] < 1.0 for f in v["coverage_by_family"].values())

@@ -35,12 +35,12 @@ def _load():
         alias_map[canon_norm] = r["canonical_title"]
         for a in (r.get("aliases") or []):
             alias_map[ip._norm_text(a)] = r["canonical_title"]
-    # city/industry buckets MUST match training exactly -> recompute from same clean data
-    clean = pd.read_csv(CLEAN_CSV, usecols=["city_norm", "industry_norm"])
-    top_cities = set(clean["city_norm"].value_counts().head(ip.TOP_CITIES).index)
-    top_inds = set(clean["industry_norm"].value_counts().head(ip.TOP_INDUSTRIES).index)
+    # persisted preprocessing artifact (immutable; not recomputed from mutable CSVs)
+    pre = json.loads((MODEL_DIR / "preprocess.json").read_text())
+    top_cities = set(pre["top_cities"])
+    top_inds = set(pre["top_industries"])
     title_info = tax.set_index("canonical_title")[["job_family", "department", "seniority", "observations", "supported"]].to_dict("index")
-    _cache.update(models=models, meta=meta, alias_map=alias_map,
+    _cache.update(models=models, meta=meta, alias_map=alias_map, preprocess=pre,
                   top_cities=top_cities, top_inds=top_inds, title_info=title_info,
                   tax=tax)
     return _cache

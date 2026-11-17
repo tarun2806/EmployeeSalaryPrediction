@@ -18,5 +18,18 @@
     0.1,
     0.5,
     0.9
+  ],
+  "dataset": "india_salary_benchmarks_2026_sample.csv (Fliar job postings, annual INR)",
+  "evaluation": {
+    "salary_test_mae": 418876.7,
+    "salary_test_rmse": 715632.34,
+    "salary_test_r2": 0.5219,
+    "salary_test_medae": 208263.7,
+    "model": "GradientBoosting"
+  },
+  "caveats": [
+    "India job-market sample; annual INR benchmark, not a guaranteed offer",
+    "Only titles with >=5 training observations supported",
+    "p10-p90 quantile range is not a confidence interval"
   ]
 }

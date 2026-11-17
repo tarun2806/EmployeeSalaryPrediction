@@ -347,6 +347,7 @@ BULK_TEMPLATE_COLUMNS = [
     "Employee_ID", "Employee_Name", "Department", "Job_Title", "Age",
     "Years_Experience", "Years_At_Company", "Current_Monthly_Salary",
     "Gender", "Satisfaction_Level", "Last_Promotion_Years", "Monthly_Hours",
+    "City", "Seniority", "Industry",
 ]
 BULK_TEMPLATE_NOTES = {
     "Employee_ID": "Unique employee identifier (required, no duplicates)",
@@ -361,6 +362,10 @@ BULK_TEMPLATE_NOTES = {
     "Satisfaction_Level": "0.0 - 1.0",
     "Last_Promotion_Years": "Years since last promotion; <=5 maps to Promotion=Yes",
     "Monthly_Hours": "Optional; used only if the active model consumes Hours",
+    "City": "Optional for India model; must match a supported city or 'Other'",
+    "Seniority": "Optional; entry/mid/senior/lead/manager (auto-derived from experience)",
+    "Industry": "Optional; must match a supported industry or 'Other'",
+    "Current_Annual_Salary": "India model: annual INR salary (preferred over monthly)",
 }
 
 
@@ -666,7 +671,7 @@ def _bulk_india_rows(df):
         except (TypeError, ValueError):
             errors.append({"row": row_no, "EmpID": emp_id, "Employee": name, "error": "invalid experience"})
             continue
-        cur = cell("Current_Monthly_Salary", "Current_Annual_Salary", "Salary")
+        cur = cell("Current_Annual_Salary", "Current_Monthly_Salary", "Salary")
         cur_f = None
         if cur is not None:
             try: cur_f = float(cur)
@@ -1008,6 +1013,8 @@ def create_app(testing=False):
         if _india_active():
             from ml import india_infer
             payload["categories"] = india_infer.supported_categories()
+            payload["job_families"] = {t: (india_infer._load()["title_info"].get(t) or {}).get("job_family", "Other")
+                                       for t in payload["categories"]["Job_Title"]}
             payload["features"] = ["Job_Title", "Experience", "City", "Seniority", "Industry"]
             payload["caveats"] = [
                 "India job-market sample (Fliar postings); annual INR benchmark.",

@@ -65,18 +65,33 @@ async function loadModelSchema() {
         document.getElementById("modelBadge").textContent = modelSchema.active_version.toUpperCase();
         document.getElementById("modelCaveat").textContent = (modelSchema.caveats || [""])[0];
         document.getElementById("tplModel").textContent = modelSchema.active_version;
+        const isIndia = modelSchema.kind === "india_salary";
+        document.getElementById("standardFields").classList.toggle("hidden", isIndia);
+        document.getElementById("indiaFields").classList.toggle("hidden", !isIndia);
+        if (isIndia) {
+            const cats = modelSchema.categories || {};
+            populateSelect("Job_TitleI", cats.Job_Title || []);
+            populateSelect("CityI", [{v:"",t:"Other / not listed"}, ...(cats.City || []).map(c => ({v:c,t:c}))]);
+            populateSelect("SeniorityI", [{v:"",t:"Auto (from experience)"}, ...(cats.Seniority || []).map(c => ({v:c,t:c}))]);
+            const jt = document.getElementById("Job_TitleI");
+            jt.addEventListener("change", e => {
+                const fam = (modelSchema.job_families || {})[e.target.value];
+                document.getElementById("jobFamilyHint") && (document.getElementById("jobFamilyHint").textContent = fam ? "Family: " + fam : "");
+            });
+        }
         document.getElementById("miVersion").textContent = modelSchema.active_version;
         document.getElementById("miDataset").textContent = modelSchema.dataset || "—";
-        document.getElementById("miUnit").textContent = modelSchema.salary_unit === "monthly_income_dataset_currency" ? "USD / month (dataset currency)" : "₹ / month (estimate)";
+        document.getElementById("miUnit").textContent = isIndia ? "₹ / year (annual INR, dataset)" : (modelSchema.salary_unit === "monthly_income_dataset_currency" ? "USD / month (dataset currency)" : "₹ / month (estimate)");
         document.getElementById("miFeatures").textContent = modelSchema.features.join(", ");
         document.getElementById("miCaveats").innerHTML = "";
         (modelSchema.caveats || []).forEach(c => {
             const li = document.createElement("li"); li.textContent = "• " + c;
             document.getElementById("miCaveats").appendChild(li);
         });
-        const unit = modelSchema.salary_unit === "monthly_income_dataset_currency" ? "" : "₹";
-        document.getElementById("dUnit1").textContent = unit ? "₹ / month (estimate)" : "USD / month (dataset)";
-        document.getElementById("salUnit").textContent = unit ? "₹ / month · benchmark estimate" : "USD / month · benchmark estimate";
+        const isInd = isIndiaModel();
+        const unit = isInd ? "₹" : (modelSchema.salary_unit === "monthly_income_dataset_currency" ? "" : "₹");
+        document.getElementById("dUnit1").textContent = isInd ? "₹ / year (annual, dataset)" : (unit ? "₹ / month (estimate)" : "USD / month (dataset)");
+        document.getElementById("salUnit").textContent = isInd ? "₹ / year · market benchmark (annual INR)" : (unit ? "₹ / month · benchmark estimate" : "USD / month · benchmark estimate");
         // categories
         const fill = (id, vals) => { const el = document.getElementById(id); el.innerHTML = "";
             (vals || []).forEach(v => { const d = document.createElement("div"); d.textContent = v; el.appendChild(d); }); };
@@ -95,6 +110,7 @@ async function loadModelSchema() {
         const mets = document.getElementById("miMetrics"); mets.innerHTML = "";
         const ev = modelSchema.metrics || {};
         const cards = [["Salary R²", ev.salary_test_r2], ["Salary MAE", ev.salary_test_mae],
+                       ["Salary RMSE", ev.salary_test_rmse], ["Salary MedAE", ev.salary_test_medae],
                        ["Attrition ROC-AUC", ev.attrition_test_roc_auc], ["Attrition PR-AUC", ev.attrition_test_pr_auc]];
         cards.forEach(([label, val]) => {
             if (val == null) return;
@@ -118,8 +134,15 @@ function populateSelect(id, values) {
     const sel = document.getElementById(id);
     if (!sel || !values || !values.length) return;
     sel.innerHTML = "";
-    values.forEach(v => { const o = document.createElement("option"); o.value = o.textContent = v; sel.appendChild(o); });
+    values.forEach(v => {
+        const o = document.createElement("option");
+        if (typeof v === "object" && v !== null) { o.value = v.v ?? v.value ?? ""; o.textContent = v.t ?? v.label ?? v.v; }
+        else { o.value = o.textContent = v; }
+        sel.appendChild(o);
+    });
 }
+const isIndiaModel = () => modelSchema && modelSchema.kind === "india_salary";
+const fmtSalary = (v) => v == null ? "—" : "₹" + Number(v).toLocaleString("en-IN", {maximumFractionDigits: 0});
 document.getElementById("Job_Title").addEventListener("change", e => {
     const fam = (modelSchema && modelSchema.job_families || {})[e.target.value];
     document.getElementById("jobFamilyHint").textContent = fam ? "Family: " + fam : "";
@@ -212,7 +235,15 @@ document.getElementById("predictForm").addEventListener("submit", async (e) => {
     const errEl = document.getElementById("predictError"); errEl.classList.add("hidden");
     const btn = document.getElementById("btnPredict"); btn.disabled = true;
     document.getElementById("btnPredictLabel").textContent = "Running…";
-    const payload = {
+    const isInd = isIndiaModel();
+    const payload = isInd ? {
+        Name: document.getElementById("NameI").value || "Anonymous",
+        Job_Title: document.getElementById("Job_TitleI").value,
+        Experience: parseFloat(document.getElementById("ExperienceI").value) || 0,
+        City: document.getElementById("CityI").value || null,
+        Seniority: document.getElementById("SeniorityI").value || null,
+        Industry: document.getElementById("IndustryI").value || null,
+    } : {
         Name: document.getElementById("Name").value || "Anonymous",
         Age: parseInt(document.getElementById("Age").value, 10),
         Gender: document.getElementById("Gender").value,
@@ -227,36 +258,59 @@ document.getElementById("predictForm").addEventListener("submit", async (e) => {
         const result = await api("/api/predict", { method: "POST", body: JSON.stringify(payload) });
         document.getElementById("resultEmpty").classList.add("hidden");
         const card = document.getElementById("resultCard"); card.classList.remove("hidden");
-        const unit = result.salary_unit === "monthly_income_dataset_currency" ? "" : "₹";
-        document.getElementById("salText").textContent = unit + fmt(result.salary);
-        document.getElementById("riskText").textContent = (result.risk * 100).toFixed(1) + "%";
-        const fill = document.getElementById("riskBarFill");
-        fill.style.width = (result.risk * 100) + "%";
-        fill.style.background = result.risk > 0.5 ? "var(--red)" : result.risk > 0.3 ? "var(--amber)" : "var(--green)";
-        const badge = document.getElementById("riskBadge");
-        badge.className = "badge " + (result.risk > 0.5 ? "badge-red" : result.risk > 0.3 ? "badge-amber" : "badge-green");
-        badge.textContent = result.risk > 0.5 ? "HIGH RISK" : result.risk > 0.3 ? "ELEVATED" : "LOW RISK";
-        document.getElementById("resultModel").textContent = "model: " + (result.model_version || "");
-        const shap = document.getElementById("shapList"); shap.innerHTML = "";
-        (result.explanation || []).slice(0, 4).forEach(d => {
-            const row = document.createElement("div"); row.className = "flex items-center justify-between";
-            const n = document.createElement("span"); n.style.color = "var(--dim)"; n.textContent = d.feature;
-            const v = document.createElement("span"); v.className = "mono font-semibold";
-            v.style.color = d.impact >= 0 ? "var(--red)" : "var(--green)";
-            v.textContent = (d.impact >= 0 ? "+" : "") + d.impact.toFixed(3);
-            row.appendChild(n); row.appendChild(v); shap.appendChild(row);
-        });
-        if (!result.explanation || !result.explanation.length) {
-            const p = document.createElement("p"); p.className = "text-xs"; p.style.color = "var(--faint)";
-            p.textContent = "No explanation available."; shap.appendChild(p);
+        document.getElementById("riskBlock").classList.toggle("hidden", isInd);
+        document.getElementById("explainBlock").classList.toggle("hidden", isInd);
+        document.getElementById("riskBadge").classList.add("hidden");
+        if (isInd) {
+            document.getElementById("salText").textContent = fmtSalary(result.salary_annual_inr);
+            document.getElementById("salRangeLine").classList.remove("hidden");
+            document.getElementById("salRangeLine").textContent =
+                `Market range (p10–p90): ${fmtSalary(result.salary_p10_inr)} – ${fmtSalary(result.salary_p90_inr)} · ${result.market_observations ?? "?"} supporting postings`;
+            document.getElementById("resultProvenance").classList.remove("hidden");
+            document.getElementById("resultProvenance").textContent =
+                `Title: ${result.canonical_title} · Family: ${result.job_family} · Support: ${result.support_level} · ${result.range_note || ""}`;
+            document.getElementById("resultModel").textContent = "model: " + (result.model_version || "") + " · " + (result.disclaimer || "");
+            if (importanceChart) { importanceChart.destroy(); importanceChart = null; }
+            document.getElementById("shapList").innerHTML = "";
+        } else {
+            document.getElementById("riskBlock").classList.remove("hidden");
+            document.getElementById("explainBlock").classList.remove("hidden");
+            document.getElementById("riskBadge").classList.remove("hidden");
+            document.getElementById("salRangeLine").classList.add("hidden");
+            document.getElementById("resultProvenance").classList.add("hidden");
+            const unit = result.salary_unit === "monthly_income_dataset_currency" ? "" : "₹";
+            document.getElementById("salText").textContent = unit + fmt(result.salary);
+            document.getElementById("salUnit").textContent = unit ? "₹ / month · benchmark estimate" : "USD / month · benchmark estimate";
+            document.getElementById("riskText").textContent = (result.risk * 100).toFixed(1) + "%";
+            const fill = document.getElementById("riskBarFill");
+            fill.style.width = (result.risk * 100) + "%";
+            fill.style.background = result.risk > 0.5 ? "var(--red)" : result.risk > 0.3 ? "var(--amber)" : "var(--green)";
+            const badge = document.getElementById("riskBadge");
+            badge.className = "badge " + (result.risk > 0.5 ? "badge-red" : result.risk > 0.3 ? "badge-amber" : "badge-green");
+            badge.textContent = result.risk > 0.5 ? "HIGH RISK" : result.risk > 0.3 ? "ELEVATED" : "LOW RISK";
+            document.getElementById("resultModel").textContent = "model: " + (result.model_version || "");
+            const shap = document.getElementById("shapList"); shap.innerHTML = "";
+            (result.explanation || []).slice(0, 4).forEach(d => {
+                const row = document.createElement("div"); row.className = "flex items-center justify-between";
+                const n = document.createElement("span"); n.style.color = "var(--dim)"; n.textContent = d.feature;
+                const v = document.createElement("span"); v.className = "mono font-semibold";
+                v.style.color = d.impact >= 0 ? "var(--red)" : "var(--green)";
+                v.textContent = (d.impact >= 0 ? "+" : "") + d.impact.toFixed(3);
+                row.appendChild(n); row.appendChild(v); shap.appendChild(row);
+            });
+            if (!result.explanation || !result.explanation.length) {
+                const p = document.createElement("p"); p.className = "text-xs"; p.style.color = "var(--faint)";
+                p.textContent = "No explanation available."; shap.appendChild(p);
+            }
+            renderImportanceChart(result.features || [], result.feat_imp || []);
         }
-        renderImportanceChart(result.features, result.feat_imp);
     } catch (err) { errEl.textContent = err.message; errEl.classList.remove("hidden"); }
     finally { btn.disabled = false; document.getElementById("btnPredictLabel").textContent = "Run prediction"; }
 });
 function renderImportanceChart(labels, data) {
     const ctx = document.getElementById("importanceChart").getContext("2d");
-    if (importanceChart) importanceChart.destroy();
+    if (importanceChart) { importanceChart.destroy(); importanceChart = null; }
+    if (!labels || !labels.length) return;
     importanceChart = new Chart(ctx, {
         type: "bar",
         data: { labels, datasets: [{ data,
