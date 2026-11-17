@@ -20,9 +20,11 @@ import pandas as pd
 from sklearn.ensemble import (GradientBoostingClassifier,
                               GradientBoostingRegressor,
                               HistGradientBoostingClassifier,
+                              HistGradientBoostingRegressor,
                               RandomForestClassifier,
                               RandomForestRegressor)
 from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge
+from sklearn.tree import DecisionTreeRegressor
 from sklearn.metrics import (accuracy_score, average_precision_score,
                              confusion_matrix, f1_score, mean_absolute_error,
                              mean_squared_error, precision_score, r2_score,
@@ -170,7 +172,9 @@ def run_dataset(dataset):
     sal_candidates = {
         "LinearRegression": LinearRegression(),
         "Ridge": Ridge(),
+        "DecisionTree": DecisionTreeRegressor(random_state=RANDOM_STATE),
         "RandomForest": RandomForestRegressor(n_estimators=300, random_state=RANDOM_STATE, n_jobs=-1),
+        "HistGradientBoosting": HistGradientBoostingRegressor(random_state=RANDOM_STATE),
         "GradientBoosting": GradientBoostingRegressor(random_state=RANDOM_STATE),
     }
 

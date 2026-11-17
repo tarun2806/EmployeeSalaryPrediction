@@ -11,9 +11,9 @@
     "Promotion"
   ],
   "categorical": [
-    "Job_Title",
     "Gender",
-    "Department"
+    "Department",
+    "Job_Title"
   ],
   "test_size": 0.2,
   "random_state": 42,
@@ -190,10 +190,20 @@
         "cv_rmse": 3612.18,
         "cv_r2": 0.397
       },
+      "DecisionTree": {
+        "cv_mae": 1872.98,
+        "cv_rmse": 2621.75,
+        "cv_r2": 0.6824
+      },
       "RandomForest": {
         "cv_mae": 1508.64,
         "cv_rmse": 2048.57,
         "cv_r2": 0.8061
+      },
+      "HistGradientBoosting": {
+        "cv_mae": 1513.76,
+        "cv_rmse": 2033.57,
+        "cv_r2": 0.8089
       },
       "GradientBoosting": {
         "cv_mae": 1454.58,
@@ -216,12 +226,26 @@
         "r2": 0.3788,
         "residual_std": 3873.94
       },
+      "DecisionTree": {
+        "model": "DecisionTree",
+        "mae": 1978.82,
+        "rmse": 2748.45,
+        "r2": 0.6873,
+        "residual_std": 2747.77
+      },
       "RandomForest": {
         "model": "RandomForest",
         "mae": 1397.9,
         "rmse": 1822.78,
         "r2": 0.8625,
         "residual_std": 1822.68
+      },
+      "HistGradientBoosting": {
+        "model": "HistGradientBoosting",
+        "mae": 1430.16,
+        "rmse": 1863.41,
+        "r2": 0.8563,
+        "residual_std": 1862.62
       },
       "GradientBoosting": {
         "model": "GradientBoosting",
