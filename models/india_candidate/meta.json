@@ -1,0 +1,22 @@
+{
+  "features": [
+    "job_family",
+    "seniority",
+    "exp_mid_years",
+    "city_bucket",
+    "industry_bucket",
+    "posted_year"
+  ],
+  "categorical": [
+    "job_family",
+    "seniority",
+    "city_bucket",
+    "industry_bucket",
+    "posted_year"
+  ],
+  "quantiles": [
+    0.1,
+    0.5,
+    0.9
+  ]
+}

@@ -1,0 +1,737 @@
+{
+  "dataset": "india_salary_benchmarks_2026_sample.csv",
+  "target": "salary_mid_inr (annual INR)",
+  "split": "80/20 random, seed 42; 5-fold CV on train",
+  "n_train": 8937,
+  "n_test": 2235,
+  "features": [
+    "job_family",
+    "seniority",
+    "exp_mid_years",
+    "city_bucket",
+    "industry_bucket",
+    "posted_year"
+  ],
+  "categorical": [
+    "job_family",
+    "seniority",
+    "city_bucket",
+    "industry_bucket",
+    "posted_year"
+  ],
+  "best_model": "GradientBoosting",
+  "results": {
+    "median_global": {
+      "cv_mae": null,
+      "holdout": {
+        "mae": 636763.0,
+        "rmse": 1113757.5,
+        "r2": -0.1581,
+        "medae": 300000.0,
+        "mean_abs_pct_err": 0.7581
+      },
+      "note": "non-ML baseline"
+    },
+    "median_family": {
+      "cv_mae": null,
+      "holdout": {
+        "mae": 611935.7,
+        "rmse": 1082567.02,
+        "r2": -0.0942,
+        "medae": 300000.0,
+        "mean_abs_pct_err": 0.7187
+      },
+      "note": "non-ML baseline"
+    },
+    "Ridge": {
+      "cv_mae": 543412.85,
+      "holdout": {
+        "mae": 555591.91,
+        "rmse": 846394.34,
+        "r2": 0.3312,
+        "medae": 370695.89,
+        "mean_abs_pct_err": 0.8952
+      },
+      "by_family": {
+        "admin": {
+          "n": 58,
+          "mae": 397794.0
+        },
+        "customer-service": {
+          "n": 69,
+          "mae": 260543.0
+        },
+        "data": {
+          "n": 94,
+          "mae": 716773.0
+        },
+        "design": {
+          "n": 92,
+          "mae": 572188.0
+        },
+        "finance": {
+          "n": 102,
+          "mae": 654255.0
+        },
+        "hr": {
+          "n": 77,
+          "mae": 405792.0
+        },
+        "manufacturing": {
+          "n": 73,
+          "mae": 424384.0
+        },
+        "marketing": {
+          "n": 93,
+          "mae": 501562.0
+        },
+        "other": {
+          "n": 326,
+          "mae": 698269.0
+        },
+        "sales": {
+          "n": 328,
+          "mae": 461388.0
+        },
+        "software-eng": {
+          "n": 617,
+          "mae": 559674.0
+        }
+      },
+      "by_city": {
+        "Ahmedabad": {
+          "n": 101,
+          "mae": 389912.0
+        },
+        "Bengaluru": {
+          "n": 549,
+          "mae": 692622.0
+        },
+        "Chennai": {
+          "n": 135,
+          "mae": 439085.0
+        },
+        "Gurugram": {
+          "n": 153,
+          "mae": 603681.0
+        },
+        "Hyderabad": {
+          "n": 271,
+          "mae": 568750.0
+        },
+        "Mumbai": {
+          "n": 241,
+          "mae": 583206.0
+        },
+        "Pune": {
+          "n": 174,
+          "mae": 512892.0
+        }
+      },
+      "by_exp_band": {
+        "0-1 yrs": {
+          "n": 564,
+          "mae": 284867.0
+        },
+        "11-15 yrs": {
+          "n": 71,
+          "mae": 1334430.0
+        },
+        "2-3 yrs": {
+          "n": 631,
+          "mae": 384506.0
+        },
+        "4-6 yrs": {
+          "n": 615,
+          "mae": 646078.0
+        },
+        "7-10 yrs": {
+          "n": 342,
+          "mae": 947713.0
+        }
+      },
+      "by_seniority": {
+        "director": {
+          "n": 68,
+          "mae": 1313264.0
+        },
+        "entry": {
+          "n": 420,
+          "mae": 268125.0
+        },
+        "intern": {
+          "n": 101,
+          "mae": 389608.0
+        },
+        "lead": {
+          "n": 213,
+          "mae": 899271.0
+        },
+        "manager": {
+          "n": 315,
+          "mae": 608944.0
+        },
+        "mid": {
+          "n": 659,
+          "mae": 471622.0
+        },
+        "senior": {
+          "n": 435,
+          "mae": 636481.0
+        }
+      }
+    },
+    "RandomForest": {
+      "cv_mae": 410846.49,
+      "holdout": {
+        "mae": 428856.52,
+        "rmse": 742160.51,
+        "r2": 0.4858,
+        "medae": 217570.98,
+        "mean_abs_pct_err": 0.6335
+      },
+      "by_family": {
+        "admin": {
+          "n": 58,
+          "mae": 308445.0
+        },
+        "customer-service": {
+          "n": 69,
+          "mae": 163089.0
+        },
+        "data": {
+          "n": 94,
+          "mae": 546920.0
+        },
+        "design": {
+          "n": 92,
+          "mae": 367505.0
+        },
+        "finance": {
+          "n": 102,
+          "mae": 511716.0
+        },
+        "hr": {
+          "n": 77,
+          "mae": 325334.0
+        },
+        "manufacturing": {
+          "n": 73,
+          "mae": 318158.0
+        },
+        "marketing": {
+          "n": 93,
+          "mae": 300584.0
+        },
+        "other": {
+          "n": 326,
+          "mae": 588769.0
+        },
+        "sales": {
+          "n": 328,
+          "mae": 329630.0
+        },
+        "software-eng": {
+          "n": 617,
+          "mae": 445797.0
+        }
+      },
+      "by_city": {
+        "Ahmedabad": {
+          "n": 101,
+          "mae": 255272.0
+        },
+        "Bengaluru": {
+          "n": 549,
+          "mae": 535227.0
+        },
+        "Chennai": {
+          "n": 135,
+          "mae": 314415.0
+        },
+        "Gurugram": {
+          "n": 153,
+          "mae": 489453.0
+        },
+        "Hyderabad": {
+          "n": 271,
+          "mae": 458562.0
+        },
+        "Mumbai": {
+          "n": 241,
+          "mae": 429752.0
+        },
+        "Pune": {
+          "n": 174,
+          "mae": 432239.0
+        }
+      },
+      "by_exp_band": {
+        "0-1 yrs": {
+          "n": 564,
+          "mae": 167365.0
+        },
+        "11-15 yrs": {
+          "n": 71,
+          "mae": 918504.0
+        },
+        "2-3 yrs": {
+          "n": 631,
+          "mae": 332623.0
+        },
+        "4-6 yrs": {
+          "n": 615,
+          "mae": 531854.0
+        },
+        "7-10 yrs": {
+          "n": 342,
+          "mae": 729978.0
+        }
+      },
+      "by_seniority": {
+        "director": {
+          "n": 68,
+          "mae": 931208.0
+        },
+        "entry": {
+          "n": 420,
+          "mae": 200191.0
+        },
+        "intern": {
+          "n": 101,
+          "mae": 102003.0
+        },
+        "lead": {
+          "n": 213,
+          "mae": 682883.0
+        },
+        "manager": {
+          "n": 315,
+          "mae": 492129.0
+        },
+        "mid": {
+          "n": 659,
+          "mae": 410498.0
+        },
+        "senior": {
+          "n": 435,
+          "mae": 494352.0
+        }
+      }
+    },
+    "ExtraTrees": {
+      "cv_mae": 412186.44,
+      "holdout": {
+        "mae": 433623.72,
+        "rmse": 751785.28,
+        "r2": 0.4723,
+        "medae": 216104.02,
+        "mean_abs_pct_err": 0.6327
+      },
+      "by_family": {
+        "admin": {
+          "n": 58,
+          "mae": 339413.0
+        },
+        "customer-service": {
+          "n": 69,
+          "mae": 156192.0
+        },
+        "data": {
+          "n": 94,
+          "mae": 578342.0
+        },
+        "design": {
+          "n": 92,
+          "mae": 383082.0
+        },
+        "finance": {
+          "n": 102,
+          "mae": 514520.0
+        },
+        "hr": {
+          "n": 77,
+          "mae": 363315.0
+        },
+        "manufacturing": {
+          "n": 73,
+          "mae": 310294.0
+        },
+        "marketing": {
+          "n": 93,
+          "mae": 313647.0
+        },
+        "other": {
+          "n": 326,
+          "mae": 596046.0
+        },
+        "sales": {
+          "n": 328,
+          "mae": 312136.0
+        },
+        "software-eng": {
+          "n": 617,
+          "mae": 444534.0
+        }
+      },
+      "by_city": {
+        "Ahmedabad": {
+          "n": 101,
+          "mae": 264609.0
+        },
+        "Bengaluru": {
+          "n": 549,
+          "mae": 549232.0
+        },
+        "Chennai": {
+          "n": 135,
+          "mae": 325530.0
+        },
+        "Gurugram": {
+          "n": 153,
+          "mae": 458379.0
+        },
+        "Hyderabad": {
+          "n": 271,
+          "mae": 462848.0
+        },
+        "Mumbai": {
+          "n": 241,
+          "mae": 434500.0
+        },
+        "Pune": {
+          "n": 174,
+          "mae": 447052.0
+        }
+      },
+      "by_exp_band": {
+        "0-1 yrs": {
+          "n": 564,
+          "mae": 165145.0
+        },
+        "11-15 yrs": {
+          "n": 71,
+          "mae": 944294.0
+        },
+        "2-3 yrs": {
+          "n": 631,
+          "mae": 333831.0
+        },
+        "4-6 yrs": {
+          "n": 615,
+          "mae": 544478.0
+        },
+        "7-10 yrs": {
+          "n": 342,
+          "mae": 732251.0
+        }
+      },
+      "by_seniority": {
+        "director": {
+          "n": 68,
+          "mae": 834961.0
+        },
+        "entry": {
+          "n": 420,
+          "mae": 196846.0
+        },
+        "intern": {
+          "n": 101,
+          "mae": 91178.0
+        },
+        "lead": {
+          "n": 213,
+          "mae": 701573.0
+        },
+        "manager": {
+          "n": 315,
+          "mae": 494424.0
+        },
+        "mid": {
+          "n": 659,
+          "mae": 422467.0
+        },
+        "senior": {
+          "n": 435,
+          "mae": 504072.0
+        }
+      }
+    },
+    "HistGradientBoosting": {
+      "cv_mae": 409937.88,
+      "holdout": {
+        "mae": 422988.6,
+        "rmse": 720553.15,
+        "r2": 0.5153,
+        "medae": 207290.44,
+        "mean_abs_pct_err": 0.6147
+      },
+      "by_family": {
+        "admin": {
+          "n": 58,
+          "mae": 333098.0
+        },
+        "customer-service": {
+          "n": 69,
+          "mae": 169866.0
+        },
+        "data": {
+          "n": 94,
+          "mae": 553266.0
+        },
+        "design": {
+          "n": 92,
+          "mae": 377624.0
+        },
+        "finance": {
+          "n": 102,
+          "mae": 483047.0
+        },
+        "hr": {
+          "n": 77,
+          "mae": 288068.0
+        },
+        "manufacturing": {
+          "n": 73,
+          "mae": 326849.0
+        },
+        "marketing": {
+          "n": 93,
+          "mae": 337567.0
+        },
+        "other": {
+          "n": 326,
+          "mae": 582267.0
+        },
+        "sales": {
+          "n": 328,
+          "mae": 293684.0
+        },
+        "software-eng": {
+          "n": 617,
+          "mae": 435073.0
+        }
+      },
+      "by_city": {
+        "Ahmedabad": {
+          "n": 101,
+          "mae": 243412.0
+        },
+        "Bengaluru": {
+          "n": 549,
+          "mae": 527047.0
+        },
+        "Chennai": {
+          "n": 135,
+          "mae": 289380.0
+        },
+        "Gurugram": {
+          "n": 153,
+          "mae": 470856.0
+        },
+        "Hyderabad": {
+          "n": 271,
+          "mae": 457021.0
+        },
+        "Mumbai": {
+          "n": 241,
+          "mae": 417842.0
+        },
+        "Pune": {
+          "n": 174,
+          "mae": 450497.0
+        }
+      },
+      "by_exp_band": {
+        "0-1 yrs": {
+          "n": 564,
+          "mae": 166452.0
+        },
+        "11-15 yrs": {
+          "n": 71,
+          "mae": 811824.0
+        },
+        "2-3 yrs": {
+          "n": 631,
+          "mae": 330721.0
+        },
+        "4-6 yrs": {
+          "n": 615,
+          "mae": 533450.0
+        },
+        "7-10 yrs": {
+          "n": 342,
+          "mae": 716563.0
+        }
+      },
+      "by_seniority": {
+        "director": {
+          "n": 68,
+          "mae": 802660.0
+        },
+        "entry": {
+          "n": 420,
+          "mae": 191203.0
+        },
+        "intern": {
+          "n": 101,
+          "mae": 100125.0
+        },
+        "lead": {
+          "n": 213,
+          "mae": 663289.0
+        },
+        "manager": {
+          "n": 315,
+          "mae": 515251.0
+        },
+        "mid": {
+          "n": 659,
+          "mae": 402116.0
+        },
+        "senior": {
+          "n": 435,
+          "mae": 505568.0
+        }
+      }
+    },
+    "GradientBoosting": {
+      "cv_mae": 400405.25,
+      "holdout": {
+        "mae": 418876.7,
+        "rmse": 715632.34,
+        "r2": 0.5219,
+        "medae": 208263.7,
+        "mean_abs_pct_err": 0.6307
+      },
+      "by_family": {
+        "admin": {
+          "n": 58,
+          "mae": 287535.0
+        },
+        "customer-service": {
+          "n": 69,
+          "mae": 151649.0
+        },
+        "data": {
+          "n": 94,
+          "mae": 514976.0
+        },
+        "design": {
+          "n": 92,
+          "mae": 379189.0
+        },
+        "finance": {
+          "n": 102,
+          "mae": 486875.0
+        },
+        "hr": {
+          "n": 77,
+          "mae": 323607.0
+        },
+        "manufacturing": {
+          "n": 73,
+          "mae": 291996.0
+        },
+        "marketing": {
+          "n": 93,
+          "mae": 311912.0
+        },
+        "other": {
+          "n": 326,
+          "mae": 589138.0
+        },
+        "sales": {
+          "n": 328,
+          "mae": 311711.0
+        },
+        "software-eng": {
+          "n": 617,
+          "mae": 434932.0
+        }
+      },
+      "by_city": {
+        "Ahmedabad": {
+          "n": 101,
+          "mae": 254953.0
+        },
+        "Bengaluru": {
+          "n": 549,
+          "mae": 503045.0
+        },
+        "Chennai": {
+          "n": 135,
+          "mae": 315587.0
+        },
+        "Gurugram": {
+          "n": 153,
+          "mae": 478279.0
+        },
+        "Hyderabad": {
+          "n": 271,
+          "mae": 456803.0
+        },
+        "Mumbai": {
+          "n": 241,
+          "mae": 417208.0
+        },
+        "Pune": {
+          "n": 174,
+          "mae": 426693.0
+        }
+      },
+      "by_exp_band": {
+        "0-1 yrs": {
+          "n": 564,
+          "mae": 163419.0
+        },
+        "11-15 yrs": {
+          "n": 71,
+          "mae": 932777.0
+        },
+        "2-3 yrs": {
+          "n": 631,
+          "mae": 322418.0
+        },
+        "4-6 yrs": {
+          "n": 615,
+          "mae": 512904.0
+        },
+        "7-10 yrs": {
+          "n": 342,
+          "mae": 722233.0
+        }
+      },
+      "by_seniority": {
+        "director": {
+          "n": 68,
+          "mae": 965423.0
+        },
+        "entry": {
+          "n": 420,
+          "mae": 184399.0
+        },
+        "intern": {
+          "n": 101,
+          "mae": 111305.0
+        },
+        "lead": {
+          "n": 213,
+          "mae": 661436.0
+        },
+        "manager": {
+          "n": 315,
+          "mae": 496224.0
+        },
+        "mid": {
+          "n": 659,
+          "mae": 397834.0
+        },
+        "senior": {
+          "n": 435,
+          "mae": 481964.0
+        }
+      }
+    }
+  }
+}

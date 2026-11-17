@@ -1,0 +1,32 @@
+{
+  "n": 50000,
+  "seed": 42,
+  "families": [
+    "admin",
+    "construction",
+    "customer-service",
+    "data",
+    "design",
+    "devops-cloud",
+    "education",
+    "finance",
+    "healthcare",
+    "hr",
+    "it-support",
+    "legal",
+    "logistics",
+    "manufacturing",
+    "marketing",
+    "operations",
+    "other",
+    "product",
+    "retail-hospitality",
+    "sales",
+    "science-research",
+    "security",
+    "software-eng"
+  ],
+  "min_family_obs": 30,
+  "calibration": "lognormal per job_family, median+std from india_salary_clean.csv",
+  "disclaimer": "All records fictional. Salary history is generated, not real observations."
+}

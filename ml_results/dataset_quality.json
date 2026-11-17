@@ -1,0 +1,28 @@
+{
+  "india_raw": {
+    "rows": 12958,
+    "cols": 14,
+    "sha256": "7c41cdb2acb3f559d17fa3bc21029223c2e40aff5b70f8391cc10960a9e6e0f8"
+  },
+  "india_clean": {
+    "rows": 11172,
+    "rejected": 1786,
+    "reject_reasons": {
+      "missing experience_band": 880,
+      "missing city": 309,
+      "salary_min >= salary_max": 266,
+      "missing salary_min/max": 245,
+      "salary above cap 8000000 (implausible for annual INR)": 57,
+      "salary below floor 50000": 29
+    }
+  },
+  "labour_bureau": {
+    "rows": 68,
+    "sha256": "663899fc4aa9428bb0d1252fc1c9c7f5e234d9ba4ceb88616abb7230a4b2c96f",
+    "note": "Sector-level avg daily wages (INR/day), Base Year 2016, 2016-2024. NOT individual salary records; kept as separate reference."
+  },
+  "attrition_synthetic": {
+    "rows": 1000,
+    "note": "Synthetic demo; attrition/salary signal ~noise (see ml_results/metrics_synthetic.json). Kept separate."
+  }
+}

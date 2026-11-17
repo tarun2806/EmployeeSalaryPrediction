@@ -1,0 +1,23 @@
+{
+  "india_salary_benchmarks": {
+    "file": "data/raw/india_salary_benchmarks_2026_sample.csv",
+    "sha256": "7c41cdb2acb3f559d17fa3bc21029223c2e40aff5b70f8391cc10960a9e6e0f8",
+    "source": "Fliar job-posting salary sample (India), columns salary_*_inr annual INR",
+    "posted_range": [
+      "2024-01-01 00:00:00",
+      "2026-06-01 00:00:00"
+    ],
+    "nature": "Real market observations (sample), not synthetic"
+  },
+  "labour_bureau_wages": {
+    "file": "data/raw/labour_bureau_wages.csv",
+    "sha256": "663899fc4aa9428bb0d1252fc1c9c7f5e234d9ba4ceb88616abb7230a4b2c96f",
+    "source": "Govt of India Ministry of Labour \u2014 Labour Bureau wage surveys",
+    "nature": "Official sector-level wage reference (avg daily wages)"
+  },
+  "employee_attrition_data": {
+    "file": "data/raw/employee_attrition_data.csv",
+    "sha256": "2f3e4f51357686c4ecc7ad795db40530779ad776edee14a5491effcf72536153",
+    "nature": "Synthetic demonstration dataset"
+  }
+}
