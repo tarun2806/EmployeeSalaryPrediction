@@ -1,0 +1,8 @@
+{
+  "holdout_n": 2235,
+  "model_coverage": 0.787,
+  "model_mean_width_inr": 1114284.0,
+  "empirical_coverage": 0.803,
+  "empirical_width_inr": 2010800.0,
+  "note": "p10/p90 quantile models; coverage on untouched 20% holdout"
+}

@@ -163,13 +163,19 @@ def load_all():
             active_meta = json.loads((BASE_DIR / meta_file).read_text())
         else:
             active_meta = {"version": version, "features": ALL_APP_FIELDS}
-        for key, fname in [
-            ("attr_model", "attr_model.pkl"), ("sal_model", "sal_model.pkl"),
-            ("attr_scaler", "attr_scaler.pkl"), ("sal_scaler", "sal_scaler.pkl"),
-            ("le_gender", "le_gender.pkl"), ("le_dept", "le_dept.pkl"),
-            ("le_title", "le_title.pkl"),
-        ]:
-            models[key] = joblib.load(mdir / fname)
+        if vconf.get("kind") == "india_salary":
+            from ml import india_infer
+            india_infer._load()  # validates artifacts load
+            models["_kind"] = "india_salary"
+        else:
+            models["_kind"] = "standard"
+            for key, fname in [
+                ("attr_model", "attr_model.pkl"), ("sal_model", "sal_model.pkl"),
+                ("attr_scaler", "attr_scaler.pkl"), ("sal_scaler", "sal_scaler.pkl"),
+                ("le_gender", "le_gender.pkl"), ("le_dept", "le_dept.pkl"),
+                ("le_title", "le_title.pkl"),
+            ]:
+                models[key] = joblib.load(mdir / fname)
         active_version = version
         models["_version"] = version
         log.info("Loaded model version '%s' from %s", version, mdir)
@@ -312,6 +318,10 @@ def _predict_row(X_arr):
     risk = float(models["attr_model"].predict_proba(models["attr_scaler"].transform(X_arr))[0][1])
     sal = float(models["sal_model"].predict(models["sal_scaler"].transform(X_arr))[0])
     return risk, sal
+
+
+def _india_active():
+    return bool(models) and models.get("_kind") == "india_salary"
 
 
 def _shap_explanation(X_arr):
@@ -623,6 +633,125 @@ def _export_csv(results, errors, scenario):
     return out.getvalue()
 
 
+def _bulk_india_rows(df):
+    """Map spreadsheet rows to india-model inputs. Returns (entries, errors)."""
+    from ml import india_infer
+    entries, errors = [], []
+    seen = set()
+    for idx, row in df.iterrows():
+        row_no = int(idx) + 2
+        def cell(*names):
+            for n in names:
+                if n in row.index and pd.notna(row[n]) and str(row[n]).strip() != "":
+                    return row[n]
+            return None
+        emp_id = cell("Employee_ID")
+        emp_id = str(emp_id).strip() if emp_id is not None else None
+        name = cell("Employee_Name") or emp_id or f"row-{row_no}"
+        if emp_id and emp_id in seen:
+            errors.append({"row": row_no, "EmpID": emp_id, "Employee": name, "error": "duplicate Employee_ID"})
+            continue
+        if emp_id: seen.add(emp_id)
+        title = cell("Job_Title", "job_title", "Title")
+        if title is None:
+            errors.append({"row": row_no, "EmpID": emp_id, "Employee": name, "error": "missing Job_Title"})
+            continue
+        canon, info, terr = india_infer.resolve_title(title)
+        if terr:
+            errors.append({"row": row_no, "EmpID": emp_id, "Employee": name, "error": terr})
+            continue
+        exp = cell("Years_Experience", "Experience", "Years_At_Company")
+        try:
+            exp_f = float(exp) if exp is not None else None
+        except (TypeError, ValueError):
+            errors.append({"row": row_no, "EmpID": emp_id, "Employee": name, "error": "invalid experience"})
+            continue
+        cur = cell("Current_Monthly_Salary", "Current_Annual_Salary", "Salary")
+        cur_f = None
+        if cur is not None:
+            try: cur_f = float(cur)
+            except (TypeError, ValueError):
+                errors.append({"row": row_no, "EmpID": emp_id, "Employee": name, "error": "invalid current salary"})
+                continue
+        entries.append({"row_no": row_no, "emp_id": emp_id, "emp_name": str(name),
+                        "title": canon, "family": info["job_family"],
+                        "department": info["department"],
+                        "city": cell("City", "city"), "experience": exp_f,
+                        "seniority": cell("Seniority", "seniority"),
+                        "industry": cell("Industry", "industry_category"),
+                        "current_salary": cur_f})
+    return entries, errors
+
+
+def _bulk_india_validate(df, filename):
+    from ml import india_infer
+    entries, errors = _bulk_india_rows(df)
+    cats = india_infer.supported_categories()
+    return jsonify({
+        "filename": filename, "total_rows": int(len(df)),
+        "valid_rows": len(entries), "invalid_rows": len(errors),
+        "sample_valid": [{"EmpID": e["emp_id"], "Employee": e["emp_name"],
+                          "Job_Title": e["title"], "Department": e["department"]} for e in entries[:10]],
+        "errors": errors[:100],
+        "supported_departments": cats["Department"],
+        "supported_job_titles": cats["Job_Title"],
+        "supported_cities": cats["City"][:40],
+        "model_version": active_version, "kind": "india_salary",
+    })
+
+
+def _bulk_india_process(df, filename):
+    from ml import india_infer
+    entries, errors = _bulk_india_rows(df)
+    results = []
+    for e in entries:
+        try:
+            r = india_infer.predict_salary(e["title"], e["experience"], e["city"],
+                                           e["seniority"], e["industry"])
+            if r.get("error"):
+                results.append({"row": e["row_no"], "EmpID": e["emp_id"], "Employee": e["emp_name"],
+                                "Department": e["department"], "Job_Title": e["title"],
+                                "Current_Salary": e["current_salary"], "Status": "failed",
+                                "Error": r["error"]})
+                continue
+            cur = e["current_salary"]
+            est = r["salary_annual_inr"]
+            results.append({
+                "row": e["row_no"], "EmpID": e["emp_id"], "Employee": e["emp_name"],
+                "Department": e["department"], "Job_Title": e["title"],
+                "City": r.get("city_bucket"), "Current_Salary": cur,
+                "Estimated_Salary": est,
+                "Salary_P10": r["salary_p10_inr"], "Salary_P90": r["salary_p90_inr"],
+                "Salary_Delta": round(est - cur, 2) if cur is not None else None,
+                "Support_Level": r["support_level"],
+                "Market_Observations": r["market_observations"],
+                "Risk": None, "Status": "ok", "Model": active_version,
+            })
+        except Exception:
+            log.exception("India bulk row %s failed", e["row_no"])
+            results.append({"row": e["row_no"], "EmpID": e["emp_id"], "Employee": e["emp_name"],
+                            "Department": e["department"], "Job_Title": e["title"],
+                            "Current_Salary": e["current_salary"], "Status": "failed",
+                            "Error": "prediction failed"})
+    ok = [r for r in results if r["Status"] == "ok"]
+    with_sal = [r for r in ok if r["Current_Salary"] is not None]
+    def avg(xs): return round(sum(xs)/len(xs), 2) if xs else None
+    summary = {"total_rows": len(df), "processed": len(results), "succeeded": len(ok),
+               "failed": len(results)-len(ok), "validation_errors": len(errors),
+               "avg_estimated_salary": avg([r["Estimated_Salary"] for r in ok]),
+               "avg_current_salary": avg([r["Current_Salary"] for r in with_sal]),
+               "employees_with_salary": len(with_sal),
+               "salary_unit": "inr_annual"}
+    job = BulkJob(filename=(filename or "upload")[:255], model_version=active_version,
+                  total_rows=len(df), valid_rows=len(entries), invalid_rows=len(errors),
+                  results_json=json.dumps(results), errors_json=json.dumps(errors),
+                  summary_json=json.dumps(summary))
+    db.session.add(job); db.session.commit()
+    log.info("India bulk job %s: %s", job.id, summary)
+    return jsonify({"job_id": job.id, "summary": summary,
+                    "sample_results": results[:10], "sample_errors": errors[:10]})
+
+
 # ---------------------------------------------------------------- app factory
 
 def create_app(testing=False):
@@ -681,6 +810,8 @@ def create_app(testing=False):
         if not load_all():
             return _json_error("Prediction models unavailable", 503, "MODELS_UNAVAILABLE")
         data = request.get_json(silent=True)
+        if _india_active():
+            return _predict_india(data)
         clean, err = _validate_predict_payload(data)
         if err:
             return err
@@ -719,6 +850,36 @@ def create_app(testing=False):
             "explanation": explanation,
             "disclaimer": "Model estimate only — not a causal prediction or employment decision.",
         })
+
+    def _predict_india(data):
+        """India salary model: annual INR benchmark + quantile range."""
+        if not isinstance(data, dict):
+            return _json_error("Request body must be a JSON object", 400, "BAD_REQUEST")
+        from ml import india_infer
+        res = india_infer.predict_salary(
+            job_title=data.get("Job_Title") or data.get("job_title"),
+            experience_years=data.get("Experience", data.get("experience_years")),
+            city=data.get("City", data.get("city")),
+            seniority=data.get("Seniority", data.get("seniority")),
+            industry=data.get("Industry", data.get("industry")),
+        )
+        if res.get("error"):
+            return _json_error(res["error"], 422, "UNSUPPORTED_TITLE")
+        name = data.get("Name", "Anonymous")
+        if not isinstance(name, str) or len(name) > 100:
+            return _err("Name", "must be a string up to 100 chars")
+        if not res.get("simulate", True) and not data.get("simulate"):
+            try:
+                db.session.add(PredictionHistory(
+                    name=name.strip() or "Anonymous",
+                    salary=res["salary_annual_inr"], risk_score=None,
+                    kind="prediction"))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+        res["model_version"] = active_version
+        res["name"] = name.strip() or "Anonymous"
+        return jsonify(res)
 
     # ---------------------------------------------------------- bulk predict
 
@@ -831,17 +992,29 @@ def create_app(testing=False):
     def model_info():
         load_all()
         reg = load_registry()
-        return jsonify({
+        payload = {
             "active_version": active_version,
             "available_versions": sorted(reg.get("versions", {}).keys()),
             "features": active_feature_fields(),
-            "categories": active_categories() if models else {},
+            "categories": active_categories() if models and not _india_active() else {},
+            "kind": "india_salary" if _india_active() else "standard",
+            "salary_unit": active_meta.get("salary_unit", "inr_annual" if _india_active() else "inr_monthly"),
             "salary_unit": active_meta.get("salary_unit", "inr_monthly"),
             "dataset": active_meta.get("dataset", "synthetic_demo"),
             "metrics": active_meta.get("evaluation", {}),
             "caveats": active_meta.get("caveats", []),
-            "job_families": {t: JOB_FAMILIES.get(t, "Other") for t in active_categories().get("Job_Title", [])},
-        })
+            "job_families": ({} if _india_active() else {t: JOB_FAMILIES.get(t, "Other") for t in active_categories().get("Job_Title", [])}),
+        }
+        if _india_active():
+            from ml import india_infer
+            payload["categories"] = india_infer.supported_categories()
+            payload["features"] = ["Job_Title", "Experience", "City", "Seniority", "Industry"]
+            payload["caveats"] = [
+                "India job-market sample (Fliar postings); annual INR benchmark.",
+                "Only job titles with >=5 training observations are supported.",
+                "Quantile range is not a statistical confidence interval.",
+            ]
+        return jsonify(payload)
 
     # ---------------------------------------------------------- analytics
 
@@ -916,6 +1089,8 @@ def create_app(testing=False):
             return _json_error("No file part", 400, "NO_FILE")
         df, err = _read_upload(request.files["file"])
         if err: return err
+        if _india_active():
+            return _bulk_india_validate(df, request.files["file"].filename)
         valid, errors = _validate_bulk_df(df)
         cats = active_categories()
         return jsonify({
@@ -942,6 +1117,8 @@ def create_app(testing=False):
             return _json_error("No file part", 400, "NO_FILE")
         df, err = _read_upload(request.files["file"])
         if err: return err
+        if _india_active():
+            return _bulk_india_process(df, request.files["file"].filename)
         valid, errors = _validate_bulk_df(df)
         results = _process_bulk_entries(valid)
         summary = _bulk_summary(results, errors, len(df))

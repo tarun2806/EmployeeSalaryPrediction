@@ -9,6 +9,11 @@
       "dir": "models/v2",
       "meta_file": "models/v2/meta.json",
       "note": "Models trained/evaluated on IBM HR Analytics sample dataset (fictional demo data)"
+    },
+    "india-salary": {
+      "dir": "models/india_candidate",
+      "kind": "india_salary",
+      "note": "India job-market salary model (Fliar postings sample, annual INR). Salary-only; no attrition model."
     }
   }
 }
