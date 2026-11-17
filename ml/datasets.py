@@ -1,4 +1,4 @@
-"""AURORA dataset loaders, schema validation and quality reporting.
+"""ESPS dataset loaders, schema validation and quality reporting.
 
 Two dataset categories:
   A) SYNTHETIC — employee_attrition_data.csv (demonstration baseline, generated data)

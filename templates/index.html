@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AURORA — Workforce Intelligence</title>
+    <title>Employee Salary Prediction System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -111,36 +111,8 @@
 </head>
 <body>
 
-<!-- ============ LOGIN ============ -->
-<div id="loginView" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-6" style="background: var(--bg);">
-    <div class="card w-full max-w-sm p-8">
-        <div class="flex items-center gap-3 mb-2">
-            <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, var(--accent), var(--accent-2));">
-                <span class="text-white font-extrabold text-sm">A</span>
-            </div>
-            <div>
-                <h1 class="font-extrabold text-lg tracking-tight">AURORA</h1>
-                <p class="text-[11px]" style="color: var(--text-dim);">Workforce Intelligence</p>
-            </div>
-        </div>
-        <p class="text-sm mt-5 mb-6" style="color: var(--text-dim);">Sign in to access salary intelligence and workforce analytics.</p>
-        <form id="loginForm" class="space-y-4">
-            <div>
-                <label class="field-label" for="loginUsername">Username</label>
-                <input class="input" type="text" id="loginUsername" required autocomplete="username">
-            </div>
-            <div>
-                <label class="field-label" for="loginPassword">Password</label>
-                <input class="input" type="password" id="loginPassword" required autocomplete="current-password">
-            </div>
-            <p id="loginError" class="hidden text-sm font-semibold" style="color: var(--red);"></p>
-            <button type="submit" class="btn btn-primary w-full !py-2.5">Sign in</button>
-        </form>
-    </div>
-</div>
-
 <!-- ============ APP ============ -->
-<div id="appView" class="hidden h-full flex-col md:flex-row">
+<div id="appView" class="h-full flex-col md:flex-row">
 
     <!-- Sidebar -->
     <aside class="sidebar w-full md:w-60 shrink-0 flex flex-col p-4 gap-1">
@@ -149,8 +121,8 @@
                 <span class="text-white font-extrabold text-xs">A</span>
             </div>
             <div class="min-w-0">
-                <h1 class="font-extrabold text-sm tracking-tight truncate">AURORA</h1>
-                <p class="text-[10px] truncate" style="color: var(--text-dim);">Workforce Intelligence</p>
+                <h1 class="font-extrabold text-sm tracking-tight truncate">ESPS</h1>
+                <p class="text-[10px] truncate" style="color: var(--text-dim);">Salary Intelligence</p>
             </div>
         </div>
         <nav class="nav-scroll md:flex-col flex gap-1 flex-1">
@@ -169,11 +141,7 @@
                 </div>
                 <span id="modelBadge" class="text-[10px] font-bold mono" style="color: var(--accent);"></span>
             </div>
-            <div class="px-2 py-2">
-                <p id="userBadge" class="text-xs font-semibold truncate">—</p>
-                <p id="modelCaveat" class="text-[10px] leading-tight mt-0.5" style="color: #5a6472;"></p>
-            </div>
-            <button id="btnLogout" class="btn btn-ghost w-full !text-xs !py-1.5 mt-1">Sign out</button>
+            
         </div>
     </aside>
 
@@ -182,10 +150,10 @@
         <header class="topbar sticky top-0 z-40 px-5 md:px-8 py-3.5 flex items-center justify-between">
             <div>
                 <h2 id="pageTitle" class="font-bold text-base">Dashboard</h2>
-                <p id="pageSub" class="text-[11.5px]" style="color: var(--text-dim);">Workforce intelligence overview</p>
+                <p id="pageSub" class="text-[11.5px]" style="color: var(--text-dim);">Salary intelligence overview</p>
             </div>
             <div class="flex items-center gap-3">
-                <span id="envBadge" class="badge badge-gray hidden md:inline-flex">DEMO DATA</span>
+                <span id="envBadge" class="badge badge-gray hidden md:inline-flex">LOCAL DEMO</span>
             </div>
         </header>
 
@@ -446,21 +414,12 @@
             <section id="settings" class="tab-content space-y-6">
                 <div>
                     <h3 class="font-bold text-lg">Account Settings</h3>
-                    <p class="text-sm mt-0.5" style="color:var(--text-dim);">Manage your credentials and session.</p>
+                    <p class="text-sm mt-0.5" style="color:var(--text-dim);">Model version, dataset and usage notes.</p>
                 </div>
                 <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                    
                     <div class="card p-6">
-                        <h4 class="font-bold text-sm mb-4">Change password</h4>
-                        <div class="space-y-4">
-                            <div><label class="field-label" for="pwCurrent">Current password</label><input class="input" type="password" id="pwCurrent" autocomplete="current-password"></div>
-                            <div><label class="field-label" for="pwNew">New password <span style="color:#5a6472">(min 8 chars)</span></label><input class="input" type="password" id="pwNew" autocomplete="new-password"></div>
-                            <p id="pwMsg" class="hidden text-sm font-semibold"></p>
-                            <button id="btnChangePw" class="btn btn-primary">Update password</button>
-                            <p class="text-[11px]" style="color:var(--text-dim);">Other active sessions will be signed out.</p>
-                        </div>
-                    </div>
-                    <div class="card p-6">
-                        <h4 class="font-bold text-sm mb-4">Session & model</h4>
+                        <h4 class="font-bold text-sm mb-4">Model & data</h4>
                         <div class="space-y-3 text-sm">
                             <div class="flex justify-between"><span style="color:var(--text-dim);">Signed in as</span><span id="setUser" class="font-semibold">—</span></div>
                             <div class="flex justify-between"><span style="color:var(--text-dim);">Role</span><span id="setRole" class="font-semibold">—</span></div>

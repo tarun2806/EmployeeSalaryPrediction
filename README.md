@@ -1,6 +1,6 @@
-# 🧠 HR Smart Assistant: AI-Powered Workforce Intelligence
+# Employee Salary Prediction System
 
-**AURORA Protocol 5.0** (Strategic HR Intelligence Layer)
+**Employee Salary Prediction System**
 
 This application is a cutting-edge HR tool designed to help organizations predict **Employee Attrition Risk** and determine **Optimal Market Salaries**. Combining machine learning with a premium user interface, it provides actionable insights for talent retention and resource management.
 

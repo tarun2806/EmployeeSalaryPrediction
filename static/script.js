@@ -1,25 +1,24 @@
-// AURORA 6.0 — Phase 3 frontend
+// Employee Salary Prediction System — frontend
 let importanceChart, anSalaryChart, teamChartUnused;
-let csrfToken = null, currentUser = null, modelSchema = null;
+let modelSchema = null;
 let historyPage = 1, historySearchTerm = "", allHistoryItems = [];
 const HISTORY_PAGE_SIZE = 20, SIM_DEBOUNCE_MS = 300;
 
 const PAGE_META = {
-    dashboard: ["Dashboard", "Workforce intelligence overview"],
+    dashboard: ["Dashboard", "Salary intelligence overview"],
     predict: ["Salary Prediction", "Salary & attrition estimates from the active model"],
     analytics: ["Analytics", "Descriptive statistics on uploaded workforce data"],
     history: ["History", "Stored model outputs — not verified outcomes"],
     simulator: ["Simulator", "Hypothetical scenario estimates"],
-    settings: ["Account", "Credentials and session"],
+    settings: ["Account", "Model & data info"],
 };
 
 async function api(path, options = {}) {
     const opts = { ...options };
     opts.headers = { ...(opts.headers || {}) };
     if (opts.body && typeof opts.body === "string") opts.headers["Content-Type"] = "application/json";
-    if (csrfToken && opts.method && opts.method !== "GET") opts.headers["X-CSRF-Token"] = csrfToken;
     const res = await fetch(path, opts);
-    if (res.status === 401 && !path.startsWith("/api/auth/")) { showLogin(); throw new Error("Session expired."); }
+    if (!res.ok && res.status === 401) { /* no auth in local demo */ }
     let data = null;
     try { data = await res.json(); } catch (_) {}
     if (!res.ok) {
@@ -29,62 +28,13 @@ async function api(path, options = {}) {
     return data;
 }
 
-// ---------- Auth ----------
-async function bootAuth() {
-    try {
-        const me = await api("/api/auth/me");
-        csrfToken = me.csrf_token; currentUser = me.user;
-        showApp();
-    } catch (_) { showLogin(); }
-}
-function showLogin() {
-    document.getElementById("loginView").classList.remove("hidden");
-    document.getElementById("appView").classList.add("hidden");
-}
+// ---------- Boot (no authentication — local demo) ----------
 function showApp() {
-    document.getElementById("loginView").classList.add("hidden");
     document.getElementById("appView").classList.remove("hidden");
-    document.getElementById("userBadge").textContent = `${currentUser.username} · ${currentUser.role}`;
-    document.getElementById("setUser").textContent = currentUser.username;
-    document.getElementById("setRole").textContent = currentUser.role;
-    document.getElementById("btnClearHistory").classList.toggle("hidden", currentUser.role !== "ADMIN");
+    document.getElementById("modelBadge") && (document.getElementById("modelBadge").textContent = "");
     loadModelSchema(); loadDashboard(); checkHealth();
     runSimulation();
 }
-
-document.getElementById("loginForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const errEl = document.getElementById("loginError");
-    errEl.classList.add("hidden");
-    try {
-        const data = await api("/api/auth/login", { method: "POST", body: JSON.stringify({
-            username: document.getElementById("loginUsername").value,
-            password: document.getElementById("loginPassword").value }) });
-        csrfToken = data.csrf_token; currentUser = data.user;
-        showApp();
-    } catch (err) { errEl.textContent = err.message; errEl.classList.remove("hidden"); }
-});
-
-document.getElementById("btnLogout").addEventListener("click", async () => {
-    try { await api("/api/auth/logout", { method: "POST" }); } catch (_) {}
-    csrfToken = null; currentUser = null; showLogin();
-});
-
-document.getElementById("btnChangePw").addEventListener("click", async () => {
-    const msg = document.getElementById("pwMsg");
-    msg.classList.add("hidden");
-    try {
-        await api("/api/auth/change-password", { method: "POST", body: JSON.stringify({
-            current_password: document.getElementById("pwCurrent").value,
-            new_password: document.getElementById("pwNew").value }) });
-        msg.textContent = "Password updated. Other sessions revoked.";
-        msg.style.color = "var(--green)"; msg.classList.remove("hidden");
-        document.getElementById("pwCurrent").value = "";
-        document.getElementById("pwNew").value = "";
-    } catch (err) {
-        msg.textContent = err.message; msg.style.color = "var(--red)"; msg.classList.remove("hidden");
-    }
-});
 
 // ---------- Navigation ----------
 document.querySelectorAll(".nav-item").forEach(item => {
@@ -345,7 +295,7 @@ function renderHistory() {
     const items = allHistoryItems.filter(r => !term || (r.name||"").toLowerCase().includes(term));
     if (!items.length) { empty.classList.remove("hidden"); return; }
     empty.classList.add("hidden");
-    const canDel = currentUser && (currentUser.role === "ADMIN" || currentUser.role === "HR_MANAGER");
+    const canDel = true;
     items.forEach(r => {
         const tr = document.createElement("tr");
         const unit = (modelSchema && modelSchema.salary_unit === "monthly_income_dataset_currency") ? "" : "₹";
@@ -409,4 +359,4 @@ async function runSimulation() {
     } catch(e){ console.error("sim:",e); }
 }
 
-bootAuth();
+showApp();

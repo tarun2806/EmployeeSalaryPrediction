@@ -1,4 +1,4 @@
-"""AURORA model evaluation and training CLI.
+"""ESPS model evaluation and training CLI.
 
 Evaluates candidate models with cross-validation on train splits only,
 then produces a single held-out test evaluation. Writes:

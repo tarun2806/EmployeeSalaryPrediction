@@ -1,86 +1,45 @@
-import os
 import sys
 from pathlib import Path
-
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app import User, create_app, db  # noqa: E402
-from werkzeug.security import generate_password_hash  # noqa: E402
-
-
-@pytest.fixture(autouse=True)
-def _reset_state(app):
-    from app import AuditEvent, RateLimitHit, Session
-    with app.app_context():
-        RateLimitHit.query.delete()
-        AuditEvent.query.delete()
-        Session.query.delete()
-        db.session.commit()
-    yield
-
-ADMIN_USER = "admin"
-ADMIN_PASS = "adminpass123"
+from app import create_app, db, RateLimitHit, PredictionHistory  # noqa: E402
 
 VALID_PAYLOAD = {
-    "Name": "Test Employee",
-    "Age": 30,
-    "Gender": "Male",
-    "Department": "Engineering",
-    "Job_Title": "Engineer",
-    "Experience": 5,
-    "Promotion": "No",
-    "Satisfaction": 0.7,
-    "Hours": 160,
+    "Name": "Test Employee", "Age": 30, "Gender": "Male",
+    "Department": "Engineering", "Job_Title": "Engineer",
+    "Experience": 5, "Promotion": "No", "Satisfaction": 0.7, "Hours": 160,
 }
-
 
 @pytest.fixture()
 def app(tmp_path, monkeypatch):
-    monkeypatch.setenv("AURORA_DB_PATH", str(tmp_path / "test.db"))
-    monkeypatch.setenv("ADMIN_USERNAME", ADMIN_USER)
-    monkeypatch.setenv("ADMIN_PASSWORD", ADMIN_PASS)
-    monkeypatch.setenv("AURORA_MODEL_VERSION", "legacy")
+    monkeypatch.setenv("ESPS_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("ESPS_MODEL_VERSION", "legacy")
     application = create_app(testing=True)
     yield application
-
 
 @pytest.fixture()
 def client(app):
     return app.test_client()
 
-
-@pytest.fixture()
-def seeded_users(app):
+@pytest.fixture(autouse=True)
+def _reset_state(app):
     with app.app_context():
-        for username, role in [("hr", "HR_MANAGER"), ("analyst", "ANALYST")]:
-            db.session.add(User(
-                username=username,
-                password_hash=generate_password_hash("userpass123"),
-                role=role,
-            ))
+        RateLimitHit.query.delete()
         db.session.commit()
-    return app
+    yield
 
+def login(client, username=None, password=None):
+    return "noauth"  # compatibility shim; app has no auth
 
-def login(client, username=ADMIN_USER, password=ADMIN_PASS):
-    resp = client.post("/api/auth/login", json={"username": username, "password": password})
-    assert resp.status_code == 200, resp.get_json()
-    return resp.get_json()["csrf_token"]
+def auth_headers(csrf=None):
+    return {}
 
-
-def auth_headers(csrf):
-    return {"X-CSRF-Token": csrf}
-
-
-def make_prediction(client, csrf, **overrides):
-    payload = dict(VALID_PAYLOAD)
-    payload.update(overrides)
-    return client.post("/api/predict", json=payload, headers=auth_headers(csrf))
-
+def make_prediction(client, csrf=None, **overrides):
+    payload = dict(VALID_PAYLOAD); payload.update(overrides)
+    return client.post("/api/predict", json=payload)
 
 def count_history(app):
-    from app import PredictionHistory
     with app.app_context():
         return PredictionHistory.query.count()
