@@ -33,3 +33,10 @@ def test_predict_deterministic(client):
     a = client.post("/api/predict", json=VALID_PAYLOAD).get_json()
     b = client.post("/api/predict", json=VALID_PAYLOAD).get_json()
     assert a["risk"] == b["risk"] and a["salary"] == b["salary"]
+
+def test_error_does_not_leak_internals(client):
+    r = client.post("/api/predict", json={"Age": "abc"})
+    body = r.get_json()
+    assert r.status_code == 422
+    assert "traceback" not in str(body).lower()
+    assert "File \"" not in str(body)

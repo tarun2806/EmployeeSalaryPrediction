@@ -29,3 +29,7 @@ def test_bulk_non_csv(client):
 
 def test_bulk_malformed(client):
     assert _up(client, b"\x00\x01bad").status_code in (400,415,422)
+
+def test_bulk_empty_file(client):
+    r = _up(client, CSV_HEADER.encode() + b"\n")
+    assert r.status_code == 422
