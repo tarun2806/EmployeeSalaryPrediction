@@ -1,9 +1,13 @@
-import io
+PAYLOAD = {"Name": "E", "Job_Title": "Software Engineer", "Experience": 4, "City": "Bengaluru"}
 
 
-def test_history_pagination(client, app):
+def _predict(client, name):
+    return client.post("/api/predict", json={**PAYLOAD, "Name": name})
+
+
+def test_history_pagination(client):
     for i in range(25):
-        client.post("/api/predict", json={"Name": f"E{i}", "Age":30,"Gender":"Male","Department":"Engineering","Job_Title":"Engineer","Experience":5,"Promotion":"No","Satisfaction":0.7,"Hours":160})
+        _predict(client, f"E{i}")
     r = client.get("/api/history?page=1&page_size=20")
     assert r.status_code == 200
     b = r.get_json()
@@ -17,7 +21,7 @@ def test_history_bad_pagination(client):
 
 
 def test_history_delete_and_clear(client):
-    client.post("/api/predict", json={"Name":"X","Age":30,"Gender":"Male","Department":"Engineering","Job_Title":"Engineer","Experience":5,"Promotion":"No","Satisfaction":0.7,"Hours":160})
+    _predict(client, "X")
     rid = client.get("/api/history").get_json()["items"][0]["id"]
     assert client.delete(f"/api/history/{rid}").status_code == 200
     assert client.delete("/api/history/99999").status_code == 404
@@ -27,7 +31,7 @@ def test_history_delete_and_clear(client):
 
 def test_xss_payload_inert(client):
     payload = '<script>alert(1)</script>'
-    client.post("/api/predict", json={"Name":payload,"Age":30,"Gender":"Male","Department":"Engineering","Job_Title":"Engineer","Experience":5,"Promotion":"No","Satisfaction":0.7,"Hours":160})
+    _predict(client, payload)
     item = client.get("/api/history").get_json()["items"][0]
     assert item["name"] == payload
 

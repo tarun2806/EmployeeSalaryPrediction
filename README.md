@@ -1,78 +1,78 @@
 # Employee Salary Prediction System
 
-**Employee Salary Prediction System**
+An HR decision-support web app that estimates **market salary benchmarks (annual INR)** for employees in the Indian job market, supports **bulk salary planning** for entire teams, and lets HR teams model **salary-increment scenarios** before committing budget.
 
-This application is a cutting-edge HR tool designed to help organizations predict **Employee Attrition Risk** and determine **Optimal Market Salaries**. Combining machine learning with a premium user interface, it provides actionable insights for talent retention and resource management.
+## Problem statement
 
----
+HR teams lack a fast, data-grounded way to answer: *"What should this role realistically pay in the Indian market, and what would a proposed increment cost us?"* Manual salary benchmarking is slow and inconsistent across geographies, seniority levels and industries.
 
-## 🚀 Key Features
+## What it does
 
-- **👤 Employee Prediction**: Real-time analysis of individual employees to determine their risk of leaving and their fair market salary based on experience and performance.
-- **📊 Team Analysis**: Bulk assessment mode where you can upload a company-wide CSV to generate risk heatmaps and identifying systemic stability issues.
-- **🧪 Prediction Simulator**: A "What-If" lab that allows HR managers to simulate how specific changes (e.g., salary boosts or satisfaction improvements) directly impact retention risk.
-- **📜 Past Predictions**: Persistent audit logs backed by a local database to track and review all previous strategic assessments.
+- **Individual prediction** — enter a job title, experience, city, seniority and industry; get an estimated annual salary plus a p10–p90 market range, the canonical job title, job family, number of supporting market observations and a support level.
+- **Bulk salary planning** — upload a CSV/XLSX employee sheet, validate rows, run salary estimates for the whole company, review results in a paginated table, and export to Excel/CSV.
+- **Increment scenarios** — apply a uniform or per-department increment percentage to current salaries, optionally capped by budget or salary ceiling, and see projected payroll impact. This is transparent arithmetic, not an ML prediction.
+- **Prediction history** — individual predictions and bulk jobs are stored in SQLite and browsable in the UI.
+- **Model information page** — shows the active model version, dataset, salary unit, supported categories and honest evaluation metrics.
 
----
+## Technology stack
 
-## 🛠️ Technology Stack
+- **Backend:** Python, Flask, Flask-SQLAlchemy, Flask-CORS
+- **ML:** scikit-learn (HistGradientBoosting quantile regressors), joblib, pandas, NumPy
+- **Database:** SQLite (prediction history, bulk jobs, rate-limit counters)
+- **Frontend:** server-rendered Jinja template + vanilla JS, TailwindCSS (CDN), Chart.js
+- **Testing:** pytest
+- **Deployment:** Vercel (`vercel.json`); local dev via `python app.py`
 
-- **Core**: Python 3.14
-- **Backend / API**: Flask & Flask-SQLAlchemy
-- **Frontend**: Vanilla Javascript, HTML, TailwindCSS (Advanced Glassmorphism UI)
-- **Machine Learning**: 
-  - `Scikit-learn` (Gradient Boosting Classifier & Regressor)
-  - `Joblib` (Model Serialization)
-- **Data Engineering**: 
-  - `Pandas` & `NumPy` (Preprocessing & Feature Scaling)
-- **Visualizations**: 
-  - `Chart.js` (Interactive Dashboard & Importance Charts)
-- **Database**: 
-  - `SQLite` with `flask-sqlalchemy` (Persistent History Logging)
-- **Deployment**: 
-  - `Vercel` Ready
+## ML approach
 
----
+The active model is **`india-salary`**: three quantile gradient-boosted regressors (p10, p50, p90) trained on a cleaned sample of real Indian job-posting salary observations (annual INR). Features: job family, seniority, experience midpoint, city bucket, industry bucket, posting year. Only job titles with ≥5 training observations are supported; unsupported titles are rejected with a clear error. The p10–p90 spread is a quantile range, **not** a confidence interval.
 
-## 🔍 The Machine Learning Approach
+Older IBM-attrition and synthetic-demo model versions were removed; the registry contains only `india-salary`.
 
-The application uses two specialized models trained on historical workforce datasets:
+## Architecture
 
-1.  **Attrition Model**: A **Gradient Boosting Classifier** that analyzes factors like satisfaction score, work hours, and tenure to predict the probability of a resignation.
-2.  **Salary Model**: A **Gradient Boosting Regressor** that calculates a competitive market salary amount based on the employee's role, experience, and department.
-3.  **Interpretability**: The tool provides real-time "Decision Drivers" charts, showing exactly why the AI arrived at a specific result.
+```
+Browser (index.html + script.js)
+   │  fetch /api/*
+   ▼
+Flask app.py ── rate limiter (DB-backed) ── security headers/CORS
+   ├── /api/predict ──► ml/india_infer.py ──► models/india_candidate/*.pkl
+   ├── /api/bulk/{validate,process,jobs,...} ──► BulkJob rows (SQLite)
+   ├── /api/history, /api/analytics ──► PredictionHistory (SQLite)
+   └── /api/model, /api/health ──► model registry + metadata
+```
 
----
+`ml/india_pipeline.py` is the offline training pipeline (ingest → clean → taxonomy → features → evaluate → serialize). `ml/india_infer.py` is the production inference path and shares the same preprocessing contract.
 
-## 📦 Project Structure
+## Datasets
 
-- `app.py`: Main Flask application and API endpoints.
-- `train.py`: The background script for model training and pipeline building.
-- `models/`: Directory containing the serialized AI brains of the project (`attr_model.pkl`, `sal_model.pkl`, encoders, scalers).
-- `templates/` & `static/`: Frontend HTML, CSS, and JS files.
-- `employee_attrition_data.csv`: Source dataset for analysis.
-- `vercel.json`: Configuration for cloud deployment.
+| File | Role |
+|---|---|
+| `data/raw/india_salary_benchmarks_2026_sample.csv` | Real job-posting salary observations (Fliar sample), annual INR — training source |
+| `data/raw/labour_bureau_wages.csv` | Govt of India sector wage reference (daily wages) — reference only, never mixed into salary targets |
+| `data/raw/employee_attrition_data.csv` | Small synthetic demo set — provenance/evaluation reference only |
+| `data/processed/` | Cleaned data, rejected rows (with reasons), job taxonomy |
+| `data/synthetic/` | Reproducible 50k fictional workforce for evaluation demos |
+| `ml_results/` | Dataset quality, provenance, model comparison and interval-coverage reports |
 
----
+## Local setup
 
-## 💻 Local Setup & Running
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python app.py          # serves http://127.0.0.1:5000
+```
 
-1.  **Clone the Repository**:
-    ```bash
-    git clone https://github.com/tarun2806/EmployeeSalaryPrediction.git
-    cd EmployeeSalaryPrediction
-    ```
+The registry defaults to `india-salary`. To pin a version explicitly: `ESPS_MODEL_VERSION=india-salary python app.py`. Optional env vars: `ESPS_DB_PATH`, `ESPS_DATABASE_URL`, `ESPS_ALLOWED_ORIGINS`, `ESPS_TRUST_PROXY` (set to `1` only behind a real proxy such as Vercel).
 
-2.  **Install Dependencies**:
-    ```bash
-    pip install -r requirements.txt
-    ```
+## Example workflow
 
-3.  **Run the Predictor**:
-    ```bash
-    python app.py
-    ```
+1. Open the app → **Individual Prediction** → Job title "Software Engineer", 4 yrs experience, Bengaluru → annual INR estimate + p10–p90 range.
+2. **Bulk Salary Planning** → download the template → upload your sheet → validate → process → review → plan a 10% increment scenario → export `.xlsx`.
 
----
+## Limitations
 
-*Developed with ❤️ as part of the Strategic HR Intelligence Initative.*
+- Salary estimates reflect the training sample's market coverage; unsupported or rare titles are rejected rather than guessed.
+- Predictions are benchmarks, not offers or HR decisions; the increment scenario is arithmetic only.
+- SQLite history is local/demo-grade; on Vercel the DB lives at `/tmp` and is not durable across instances.
+- No authentication; rate limiting is per-IP and intended for a demo deployment.

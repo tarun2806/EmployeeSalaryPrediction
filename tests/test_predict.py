@@ -1,4 +1,4 @@
-from conftest import VALID_PAYLOAD, make_prediction
+from conftest import VALID_PAYLOAD
 
 
 def test_predict_success(client, app):
@@ -6,8 +6,9 @@ def test_predict_success(client, app):
     resp = client.post("/api/predict", json=VALID_PAYLOAD)
     assert resp.status_code == 200
     body = resp.get_json()
-    assert 0 <= body["risk"] <= 1 and body["salary"] > 0
-    assert len(body["feat_imp"]) == 8
+    assert body["salary_unit"] == "inr_annual"
+    assert body["salary_annual_inr"] > 0
+    assert body["salary_p10_inr"] <= body["salary_annual_inr"] <= body["salary_p90_inr"]
     assert __import__('conftest').count_history(app) == before + 1
 
 
@@ -19,24 +20,24 @@ def test_predict_simulate_no_persist(client, app):
     assert count_history(app) == before
 
 
-def test_predict_validation(client):
-    for over in [{"Age":5},{"Satisfaction":1.5},{"Gender":"Robot"},{"Department":"Legal"}]:
-        r = client.post("/api/predict", json={**VALID_PAYLOAD, **over})
-        assert r.status_code == 422, (over, r.status_code)
+def test_predict_unsupported_title(client):
+    r = client.post("/api/predict", json={**VALID_PAYLOAD, "Job_Title": "Astronaut"})
+    assert r.status_code == 422
 
 
 def test_predict_bad_body(client):
-    assert client.post("/api/predict", json=[1,2,3]).status_code == 400
+    assert client.post("/api/predict", json=[1, 2, 3]).status_code == 400
 
 
 def test_predict_deterministic(client):
     a = client.post("/api/predict", json=VALID_PAYLOAD).get_json()
     b = client.post("/api/predict", json=VALID_PAYLOAD).get_json()
-    assert a["risk"] == b["risk"] and a["salary"] == b["salary"]
+    assert a["salary_annual_inr"] == b["salary_annual_inr"]
+
 
 def test_error_does_not_leak_internals(client):
-    r = client.post("/api/predict", json={"Age": "abc"})
+    r = client.post("/api/predict", json={"Job_Title": 123})
     body = r.get_json()
-    assert r.status_code == 422
+    assert r.status_code in (400, 422)
     assert "traceback" not in str(body).lower()
     assert "File \"" not in str(body)

@@ -22,11 +22,6 @@ log = logging.getLogger("esps")
 REGISTRY_PATH = MODELS_PATH / "registry.json"
 ALL_APP_FIELDS = ["Age", "Gender", "Department", "Job_Title", "Experience",
                   "Satisfaction", "Hours", "Promotion"]
-FEATURE_LABELS = ["Age", "Gender", "Dept", "Title", "Tenure", "Sat", "Hours", "Promo"]
-BULK_REQUIRED_COLUMNS = [
-    "Age", "Gender", "Department", "Job_Title", "Years_at_Company",
-    "Satisfaction_Level", "Average_Monthly_Hours", "Promotion_Last_5Years",
-]
 MAX_CONTENT_LENGTH = 5 * 1024 * 1024
 MAX_BULK_ROWS = 5000
 API_RATE_LIMIT = 300
@@ -193,7 +188,12 @@ def _json_error(message, status=400, code=None):
 
 
 def _client_ip():
-    return request.headers.get("X-Forwarded-For", request.remote_addr or "unknown").split(",")[0].strip()
+    # Only trust X-Forwarded-For when explicitly deployed behind a proxy
+    # (ESPS_TRUST_PROXY=1, e.g. Vercel). Otherwise use the direct peer address
+    # so clients cannot spoof rate-limit identities.
+    if os.environ.get("ESPS_TRUST_PROXY"):
+        return request.headers.get("X-Forwarded-For", request.remote_addr or "unknown").split(",")[0].strip()
+    return request.remote_addr or "unknown"
 
 
 def rate_allow(key, limit, window_seconds):
@@ -873,7 +873,7 @@ def create_app(testing=False):
         name = data.get("Name", "Anonymous")
         if not isinstance(name, str) or len(name) > 100:
             return _err("Name", "must be a string up to 100 chars")
-        if not res.get("simulate", True) and not data.get("simulate"):
+        if not data.get("simulate"):
             try:
                 db.session.add(PredictionHistory(
                     name=name.strip() or "Anonymous",
@@ -885,74 +885,6 @@ def create_app(testing=False):
         res["model_version"] = active_version
         res["name"] = name.strip() or "Anonymous"
         return jsonify(res)
-
-    # ---------------------------------------------------------- bulk predict
-
-    @app.route("/api/bulk_predict", methods=["POST"])
-    def bulk_predict():
-        if not rate_allow(f"bulk:{_client_ip()}", BULK_RATE_LIMIT, 60):
-            return _json_error("Bulk analysis rate limit exceeded", 429, "RATE_LIMITED")
-        if not load_all():
-            return _json_error("Prediction models unavailable", 503, "MODELS_UNAVAILABLE")
-
-        if "file" not in request.files:
-            return _json_error("No file part", 400, "NO_FILE")
-        file = request.files["file"]
-        if not file or not file.filename:
-            return _json_error("No selected file", 400, "NO_FILE")
-        if not file.filename.lower().endswith(".csv"):
-            return _json_error("Only .csv files are accepted", 415, "UNSUPPORTED_MEDIA_TYPE")
-
-        raw = file.read(MAX_CONTENT_LENGTH + 1)
-        if len(raw) > MAX_CONTENT_LENGTH:
-            return _json_error("File exceeds 5 MB limit", 413, "FILE_TOO_LARGE")
-
-        try:
-            df = pd.read_csv(io.BytesIO(raw))
-        except Exception:
-            log.warning("Malformed CSV upload")
-            return _json_error("File is not a valid CSV", 422, "MALFORMED_CSV")
-
-        required = [c for c in BULK_REQUIRED_COLUMNS
-                    if c != "Average_Monthly_Hours" or "Hours" in active_feature_fields()]
-        missing = [c for c in required if c not in df.columns]
-        if missing:
-            return _json_error(f"Missing required columns: {', '.join(missing)}", 422, "MISSING_COLUMNS")
-        if len(df) > MAX_BULK_ROWS:
-            return _json_error(f"Too many rows (max {MAX_BULK_ROWS})", 413, "TOO_MANY_ROWS")
-        if len(df) == 0:
-            return _json_error("CSV contains no data rows", 422, "EMPTY_FILE")
-
-        results, errors = [], []
-        for idx, row in df.iterrows():
-            row_no = int(idx) + 2
-            emp_id = row.get("Employee_ID", row_no - 1)
-            try:
-                payload = {
-                    "Name": str(emp_id),
-                    "Age": row["Age"], "Gender": row["Gender"],
-                    "Department": row["Department"], "Job_Title": row["Job_Title"],
-                    "Experience": row["Years_at_Company"],
-                    "Satisfaction": row["Satisfaction_Level"],
-                    "Hours": row.get("Average_Monthly_Hours", 160),
-                    "Promotion": "Yes" if str(row["Promotion_Last_5Years"]).strip() in ("1", "1.0", "Yes", "yes", "True") else "No",
-                }
-                clean, verr = _validate_predict_payload(payload)
-                if verr:
-                    errors.append({"row": row_no, "EmpID": emp_id, "error": "validation failed"})
-                    continue
-                X_arr = _encode_row(clean)
-                risk, sal = _predict_row(X_arr)
-                results.append({"EmpID": emp_id, "risk": risk, "salary": sal, "dept": clean["Department"]})
-            except Exception:
-                log.exception("Bulk row %s failed", row_no)
-                errors.append({"row": row_no, "EmpID": emp_id, "error": "prediction failed"})
-
-        log.info("Bulk predict: %d ok, %d errors", len(results), len(errors))
-        return jsonify({
-            "results": results, "errors": errors,
-            "summary": {"total": len(df), "succeeded": len(results), "failed": len(errors)},
-        })
 
     # ---------------------------------------------------------- history
 
@@ -1004,7 +936,6 @@ def create_app(testing=False):
             "categories": active_categories() if models and not _india_active() else {},
             "kind": "india_salary" if _india_active() else "standard",
             "salary_unit": active_meta.get("salary_unit", "inr_annual" if _india_active() else "inr_monthly"),
-            "salary_unit": active_meta.get("salary_unit", "inr_monthly"),
             "dataset": active_meta.get("dataset", "synthetic_demo"),
             "metrics": active_meta.get("evaluation", {}),
             "caveats": active_meta.get("caveats", []),
@@ -1051,18 +982,28 @@ def create_app(testing=False):
     def bulk_template():
         fmt = request.args.get("format", "csv")
         load_all()
+        if _india_active():
+            from ml import india_infer
+            _ic = india_infer.supported_categories()
+            _dept0 = (_ic.get("Department") or ["Engineering"])[0]
+            _title0 = (_ic.get("Job_Title") or ["Software Engineer"])[0]
+            _req_cols = {"Job_Title"}
+        else:
+            _ac = active_categories()
+            _dept0 = (_ac.get("Department") or ["Engineering"])[0]
+            _title0 = (_ac.get("Job_Title") or ["Engineer"])[0]
+            _req_cols = {"Department", "Job_Title", "Age", "Years_At_Company", "Gender", "Satisfaction_Level"}
         if fmt == "xlsx":
             from openpyxl import Workbook
             wb = Workbook(); ws = wb.active; ws.title = "Template"
             ws.append(BULK_TEMPLATE_COLUMNS)
-            ws.append(["E001", "Example Employee", (active_categories().get("Department") or ["Engineering"])[0],
-                       (active_categories().get("Job_Title") or ["Engineer"])[0], 30, 5, 3, 50000,
-                       (active_categories().get("Gender") or ["Male"])[0], 0.7, 2, 160])
+            ws.append(["E001", "Example Employee", _dept0, _title0, 30, 5, 3, 50000,
+                       "Male", 0.7, 2, 160])
             ws2 = wb.create_sheet("Column Guide")
             ws2.append(["Column", "Description", "Required"])
             for c in BULK_TEMPLATE_COLUMNS:
                 ws2.append([_safe_cell(c), BULK_TEMPLATE_NOTES.get(c, ""),
-                            "yes" if c in ("Department", "Job_Title", "Age", "Years_At_Company", "Gender", "Satisfaction_Level") else "no"])
+                            "yes" if c in _req_cols else "no"])
             bio = io.BytesIO(); wb.save(bio)
             from flask import Response
             return Response(bio.getvalue(), mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -1070,17 +1011,14 @@ def create_app(testing=False):
         import csv as _csv
         out = io.StringIO(); w = _csv.writer(out)
         w.writerow(BULK_TEMPLATE_COLUMNS)
-        w.writerow(["E001", "Example Employee",
-                    (active_categories().get("Department") or ["Engineering"])[0],
-                    (active_categories().get("Job_Title") or ["Engineer"])[0],
-                    30, 5, 3, 50000,
-                    (active_categories().get("Gender") or ["Male"])[0], 0.7, 2, 160])
+        w.writerow(["E001", "Example Employee", _dept0, _title0,
+                    30, 5, 3, 50000, "Male", 0.7, 2, 160])
         w.writerow([])
         w.writerow(["COLUMN GUIDE"])
         w.writerow(["Column", "Description", "Required"])
         for c in BULK_TEMPLATE_COLUMNS:
             w.writerow([c, BULK_TEMPLATE_NOTES.get(c, ""),
-                        "yes" if c in ("Department", "Job_Title", "Age", "Years_At_Company", "Gender", "Satisfaction_Level") else "no"])
+                        "yes" if c in _req_cols else "no"])
         from flask import Response
         return Response(out.getvalue(), mimetype="text/csv",
                         headers={"Content-Disposition": "attachment; filename=salary_template.csv"})
