@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 import pytest
 from ml import india_pipeline as ip
-from ml import synthetic_generator as sg
 
 
 @pytest.fixture(scope="module")
@@ -65,24 +64,6 @@ def test_model_comparison_exists_and_honest():
     assert "median_global" in comp["results"] and "median_family" in comp["results"]
 
 
-def test_synthetic_reproducible_and_flagged():
-    df1 = sg.generate(2000, seed=7)
-    df2 = sg.generate(2000, seed=7)
-    assert df1.equals(df2)
-    assert (df1["data_origin"] == "synthetic").all()
-    assert (df1["generation_version"] == "syn-v1-seed7").all()
-    assert "employee_id" not in ip.FEATURE_COLS  # synthetic ids never become features
-
-
-def test_synthetic_salary_calibration():
-    df = pd.read_csv(ip.BASE / "data" / "synthetic" / "workforce_synthetic_50k.csv")
-    assert len(df) == 50000
-    clean = pd.read_csv(ip.PROCESSED / "india_salary_clean.csv")
-    # synthetic family medians should be within plausible range of real medians
-    for fam in df.job_family.unique():
-        real = clean[clean.role_family_norm == fam].salary_mid_inr.median()
-        syn = df[df.job_family == fam].current_annual_salary_inr.median()
-        assert 0.3 * real < syn < 3.0 * real, fam
 
 
 def test_labour_bureau_not_treated_as_salaries():

@@ -80,14 +80,6 @@ def test_app_india_bulk(india_client):
     assert d["results"][0]["Salary_P10"] <= d["results"][0]["Estimated_Salary"] <= d["results"][0]["Salary_P90"]
 
 
-def test_rollback_to_legacy(tmp_path, monkeypatch):
-    monkeypatch.setenv("ESPS_DB_PATH", str(tmp_path / "r.db"))
-    monkeypatch.setenv("ESPS_MODEL_VERSION", "legacy")
-    from app import create_app
-    c = create_app(testing=True).test_client()
-    m = c.get("/api/model").get_json()
-    assert m["kind"] == "standard" and m["active_version"] == "legacy"
-
 
 def test_preprocess_persisted_not_recomputed():
     """Inference must use persisted preprocess.json, not mutable CSVs."""

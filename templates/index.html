@@ -197,7 +197,6 @@
                 <h2 id="pageTitle" class="font-bold text-base md:text-lg truncate">Dashboard</h2>
                 <p id="pageSub" class="text-[11px] md:text-[11.5px] page-sub truncate" style="color:var(--dim);">AI-powered salary estimation and workforce salary planning</p>
             </div>
-            <span class="badge badge-gray hidden md:inline-flex shrink-0">LOCAL DEMO</span>
         </header>
 
         <main class="flex-1 overflow-y-auto p-4 md:p-8 main-scroll">
@@ -272,29 +271,7 @@
                 <div class="grid grid-cols-1 xl:grid-cols-5 gap-5">
                     <div class="card p-6 xl:col-span-3">
                         <form id="predictForm" class="space-y-5">
-                            <div id="standardFields">
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div><label class="field-label" for="Name">Employee name</label><input class="input" type="text" id="Name" maxlength="100" placeholder="e.g. Alex Morgan"></div>
-                                <div><label class="field-label" for="Age">Age <span style="color:var(--faint)">(16–100)</span></label><input class="input" type="number" id="Age" min="16" max="100" value="30"></div>
-                                <div><label class="field-label" for="Experience">Years at company <span style="color:var(--faint)">(0–60)</span></label><input class="input" type="number" id="Experience" min="0" max="60" value="5"></div>
-                                <div id="hoursBlock"><label class="field-label" for="Hours">Monthly hours <span style="color:var(--faint)">(0–500)</span></label><input class="input" type="number" id="Hours" min="0" max="500" value="160"></div>
-                                <div><label class="field-label" for="Department">Department</label><select class="input" id="Department"></select></div>
-                                <div>
-                                    <label class="field-label" for="Job_Title">Job title</label>
-                                    <select class="input" id="Job_Title"></select>
-                                    <p id="jobFamilyHint" class="text-[11px] mt-1" style="color:var(--faint);"></p>
-                                </div>
-                                <div><label class="field-label" for="Gender">Gender</label><select class="input" id="Gender"></select></div>
-                                <div>
-                                    <label class="field-label">Recent promotion?</label>
-                                    <div class="flex gap-2 mt-1">
-                                        <label class="flex-1 cursor-pointer"><input type="radio" name="Promotion" value="No" checked class="peer sr-only"><span class="block text-center text-sm py-2 rounded-lg border peer-checked:border-[var(--accent)] peer-checked:bg-[rgba(91,140,255,.12)] peer-checked:text-white" style="border-color:var(--border);color:var(--dim);">No</span></label>
-                                        <label class="flex-1 cursor-pointer"><input type="radio" name="Promotion" value="Yes" class="peer sr-only"><span class="block text-center text-sm py-2 rounded-lg border peer-checked:border-[var(--accent)] peer-checked:bg-[rgba(91,140,255,.12)] peer-checked:text-white" style="border-color:var(--border);color:var(--dim);">Yes</span></label>
-                                    </div>
-                                </div>
-                            </div>
-                            </div>
-                            <div id="indiaFields" class="hidden">
+                            <div id="indiaFields">
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div><label class="field-label" for="NameI">Employee name</label><input class="input" type="text" id="NameI" maxlength="100" placeholder="e.g. Priya Sharma"></div>
                                     <div><label class="field-label" for="ExperienceI">Experience (years)</label><input class="input" type="number" id="ExperienceI" min="0" max="40" step="0.5" value="4"></div>
@@ -304,10 +281,6 @@
                                     <div><label class="field-label" for="IndustryI">Industry</label><input class="input" type="text" id="IndustryI" placeholder="e.g. Software & IT (optional)"></div>
                                 </div>
                                 <p class="text-[11px] mt-2" style="color:var(--faint);">Only job titles observed in the India market sample (≥5 postings) are supported.</p>
-                            </div>
-                            <div>
-                                <label class="field-label flex justify-between"><span>Satisfaction score</span><span id="satValue" class="mono" style="color:var(--accent);">0.70</span></label>
-                                <input type="range" id="Satisfaction" min="0" max="1" step="0.05" value="0.7">
                             </div>
                             <p id="predictError" class="hidden text-sm font-semibold" style="color:var(--red);"></p>
                             <button type="submit" id="btnPredict" class="btn btn-primary w-full !py-2.5"><span id="btnPredictLabel">Run prediction</span></button>
@@ -326,24 +299,10 @@
                                     <p id="salText" class="text-3xl font-extrabold mt-1" style="color:var(--accent);">—</p>
                                     <p id="salUnit" class="text-[11px] mt-0.5" style="color:var(--dim);">benchmark estimate</p>
                                 </div>
-                                <span id="riskBadge" class="badge badge-gray">—</span>
                             </div>
                             <p id="salRangeLine" class="text-xs font-semibold mb-3 hidden" style="color:var(--dim);"></p>
                             <p id="resultProvenance" class="text-[11px] mb-3 hidden" style="color:var(--faint);"></p>
                             <p class="text-[11px] mb-3 font-semibold" style="color:var(--dim);">This is a <strong>benchmark estimate</strong> of typical salary for the given profile — not a prediction of a future raise.</p>
-                            <div id="riskBlock" class="mb-4">
-                                <div class="flex justify-between text-xs mb-1.5"><span style="color:var(--dim);">Attrition risk (supporting)</span><span id="riskText" class="font-bold">—</span></div>
-                                <div class="risk-bar"><div id="riskBarFill" style="width:0%;"></div></div>
-                            </div>
-                            <div id="explainBlock">
-                            <div class="card p-4 mb-4" style="background:var(--surface-2);">
-                                <p class="text-[11px] font-bold uppercase tracking-wider mb-2" style="color:var(--dim);">Top drivers (SHAP)</p>
-                                <div id="shapList" class="space-y-1.5 text-xs"></div>
-                            </div>
-                            <div class="card p-4" style="background:var(--surface-2);">
-                                <p class="text-[11px] font-bold uppercase tracking-wider mb-1.5" style="color:var(--dim);">Feature importance</p>
-                                <div class="h-40"><canvas id="importanceChart"></canvas></div>
-                            </div>
                             </div>
                             <p class="text-[10.5px] mt-4 leading-relaxed" style="color:var(--faint);">Model estimate only — not a causal prediction or employment decision. <span id="resultModel" class="mono"></span></p>
                         </div>

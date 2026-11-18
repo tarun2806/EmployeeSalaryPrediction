@@ -1,5 +1,5 @@
 // Employee Salary Prediction System — frontend
-let importanceChart, dashDeptChart;
+let dashDeptChart;
 let modelSchema = null;
 let historyPage = 1, historySearchTerm = "", allHistoryItems = [];
 const HISTORY_PAGE_SIZE = 20;
@@ -69,17 +69,10 @@ function switchTab(tab) {
 async function loadModelSchema() {
     try {
         modelSchema = await api("/api/model");
-        populateSelect("Department", modelSchema.categories.Department);
-        populateSelect("Job_Title", modelSchema.categories.Job_Title);
-        populateSelect("Gender", modelSchema.categories.Gender);
-        if (modelSchema.features && !modelSchema.features.includes("Hours"))
-            document.getElementById("hoursBlock").classList.add("hidden");
         document.getElementById("modelBadge").textContent = modelSchema.active_version.toUpperCase();
         document.getElementById("modelCaveat").textContent = (modelSchema.caveats || [""])[0];
         document.getElementById("tplModel").textContent = modelSchema.active_version;
         const isIndia = modelSchema.kind === "india_salary";
-        document.getElementById("standardFields").classList.toggle("hidden", isIndia);
-        document.getElementById("indiaFields").classList.toggle("hidden", !isIndia);
         if (isIndia) {
             const cats = modelSchema.categories || {};
             populateSelect("Job_TitleI", cats.Job_Title || []);
@@ -168,10 +161,6 @@ function populateSelect(id, values) {
 }
 const isIndiaModel = () => modelSchema && modelSchema.kind === "india_salary";
 const fmtSalary = (v) => v == null ? "—" : "₹" + Number(v).toLocaleString("en-IN", {maximumFractionDigits: 0});
-document.getElementById("Job_Title").addEventListener("change", e => {
-    const fam = (modelSchema && modelSchema.job_families || {})[e.target.value];
-    document.getElementById("jobFamilyHint").textContent = fam ? "Family: " + fam : "";
-});
 
 // ---------- Health ----------
 async function checkHealth() {
@@ -252,102 +241,34 @@ async function loadDashboard() {
 }
 
 // ---------- Individual prediction ----------
-document.getElementById("Satisfaction").addEventListener("input", e => {
-    document.getElementById("satValue").textContent = parseFloat(e.target.value).toFixed(2);
-});
 document.getElementById("predictForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const errEl = document.getElementById("predictError"); errEl.classList.add("hidden");
     const btn = document.getElementById("btnPredict"); btn.disabled = true;
     document.getElementById("btnPredictLabel").textContent = "Running…";
-    const isInd = isIndiaModel();
-    const payload = isInd ? {
+    const payload = {
         Name: document.getElementById("NameI").value || "Anonymous",
         Job_Title: document.getElementById("Job_TitleI").value,
         Experience: parseFloat(document.getElementById("ExperienceI").value) || 0,
         City: document.getElementById("CityI").value || null,
         Seniority: document.getElementById("SeniorityI").value || null,
         Industry: document.getElementById("IndustryI").value || null,
-    } : {
-        Name: document.getElementById("Name").value || "Anonymous",
-        Age: parseInt(document.getElementById("Age").value, 10),
-        Gender: document.getElementById("Gender").value,
-        Department: document.getElementById("Department").value,
-        Job_Title: document.getElementById("Job_Title").value,
-        Experience: parseInt(document.getElementById("Experience").value, 10),
-        Hours: parseInt(document.getElementById("Hours").value || "160", 10),
-        Promotion: document.querySelector('input[name="Promotion"]:checked').value,
-        Satisfaction: parseFloat(document.getElementById("Satisfaction").value),
     };
     try {
         const result = await api("/api/predict", { method: "POST", body: JSON.stringify(payload) });
         document.getElementById("resultEmpty").classList.add("hidden");
-        const card = document.getElementById("resultCard"); card.classList.remove("hidden");
-        document.getElementById("riskBlock").classList.toggle("hidden", isInd);
-        document.getElementById("explainBlock").classList.toggle("hidden", isInd);
-        document.getElementById("riskBadge").classList.add("hidden");
-        if (isInd) {
-            document.getElementById("salText").textContent = fmtSalary(result.salary_annual_inr);
-            document.getElementById("salRangeLine").classList.remove("hidden");
-            document.getElementById("salRangeLine").textContent =
-                `Market range (p10–p90): ${fmtSalary(result.salary_p10_inr)} – ${fmtSalary(result.salary_p90_inr)} · ${result.market_observations ?? "?"} supporting postings`;
-            document.getElementById("resultProvenance").classList.remove("hidden");
-            document.getElementById("resultProvenance").textContent =
-                `Title: ${result.canonical_title} · Family: ${result.job_family} · Support: ${result.support_level} · ${result.range_note || ""}`;
-            document.getElementById("resultModel").textContent = "model: " + (result.model_version || "") + " · " + (result.disclaimer || "");
-            if (importanceChart) { importanceChart.destroy(); importanceChart = null; }
-            document.getElementById("shapList").innerHTML = "";
-        } else {
-            document.getElementById("riskBlock").classList.remove("hidden");
-            document.getElementById("explainBlock").classList.remove("hidden");
-            document.getElementById("riskBadge").classList.remove("hidden");
-            document.getElementById("salRangeLine").classList.add("hidden");
-            document.getElementById("resultProvenance").classList.add("hidden");
-            const unit = result.salary_unit === "monthly_income_dataset_currency" ? "" : "₹";
-            document.getElementById("salText").textContent = unit + fmt(result.salary);
-            document.getElementById("salUnit").textContent = unit ? "₹ / month · benchmark estimate" : "USD / month · benchmark estimate";
-            document.getElementById("riskText").textContent = (result.risk * 100).toFixed(1) + "%";
-            const fill = document.getElementById("riskBarFill");
-            fill.style.width = (result.risk * 100) + "%";
-            fill.style.background = result.risk > 0.5 ? "var(--red)" : result.risk > 0.3 ? "var(--amber)" : "var(--green)";
-            const badge = document.getElementById("riskBadge");
-            badge.className = "badge " + (result.risk > 0.5 ? "badge-red" : result.risk > 0.3 ? "badge-amber" : "badge-green");
-            badge.textContent = result.risk > 0.5 ? "HIGH RISK" : result.risk > 0.3 ? "ELEVATED" : "LOW RISK";
-            document.getElementById("resultModel").textContent = "model: " + (result.model_version || "");
-            const shap = document.getElementById("shapList"); shap.innerHTML = "";
-            (result.explanation || []).slice(0, 4).forEach(d => {
-                const row = document.createElement("div"); row.className = "flex items-center justify-between";
-                const n = document.createElement("span"); n.style.color = "var(--dim)"; n.textContent = d.feature;
-                const v = document.createElement("span"); v.className = "mono font-semibold";
-                v.style.color = d.impact >= 0 ? "var(--red)" : "var(--green)";
-                v.textContent = (d.impact >= 0 ? "+" : "") + d.impact.toFixed(3);
-                row.appendChild(n); row.appendChild(v); shap.appendChild(row);
-            });
-            if (!result.explanation || !result.explanation.length) {
-                const p = document.createElement("p"); p.className = "text-xs"; p.style.color = "var(--faint)";
-                p.textContent = "No explanation available."; shap.appendChild(p);
-            }
-            renderImportanceChart(result.features || [], result.feat_imp || []);
-        }
+        document.getElementById("resultCard").classList.remove("hidden");
+        document.getElementById("salText").textContent = fmtSalary(result.salary_annual_inr);
+        document.getElementById("salRangeLine").classList.remove("hidden");
+        document.getElementById("salRangeLine").textContent =
+            `Market range (p10–p90): ${fmtSalary(result.salary_p10_inr)} – ${fmtSalary(result.salary_p90_inr)} · ${result.market_observations ?? "?"} supporting postings`;
+        document.getElementById("resultProvenance").classList.remove("hidden");
+        document.getElementById("resultProvenance").textContent =
+            `Title: ${result.canonical_title} · Family: ${result.job_family} · Support: ${result.support_level} · ${result.range_note || ""}`;
+        document.getElementById("resultModel").textContent = "model: " + (result.model_version || "") + " · " + (result.disclaimer || "");
     } catch (err) { errEl.textContent = err.message; errEl.classList.remove("hidden"); }
     finally { btn.disabled = false; document.getElementById("btnPredictLabel").textContent = "Run prediction"; }
 });
-function renderImportanceChart(labels, data) {
-    const ctx = document.getElementById("importanceChart").getContext("2d");
-    if (importanceChart) { importanceChart.destroy(); importanceChart = null; }
-    if (!labels || !labels.length) return;
-    importanceChart = new Chart(ctx, {
-        type: "bar",
-        data: { labels, datasets: [{ data,
-            backgroundColor: data.map(v => v > 0.15 ? "rgba(79,70,229,.85)" : "rgba(79,70,229,.2)"),
-            borderRadius: 6, borderSkipped: false }] },
-        options: { responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { beginAtZero: true, grid: { color: "rgba(20,25,50,.07)" }, border: { display: false }, ticks: { color: "#5d6780", font: { size: 10 } } },
-                x: { grid: { display: false }, ticks: { color: "#5d6780", font: { size: 10 } } } } },
-    });
-}
 
 // ---------- Bulk workflow ----------
 const dropzone = document.getElementById("dropzone");

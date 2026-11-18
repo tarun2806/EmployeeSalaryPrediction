@@ -6,8 +6,6 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-import joblib
-import numpy as np
 import pandas as pd
 from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
@@ -20,8 +18,6 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 log = logging.getLogger("esps")
 
 REGISTRY_PATH = MODELS_PATH / "registry.json"
-ALL_APP_FIELDS = ["Age", "Gender", "Department", "Job_Title", "Experience",
-                  "Satisfaction", "Hours", "Promotion"]
 MAX_CONTENT_LENGTH = 5 * 1024 * 1024
 MAX_BULK_ROWS = 5000
 API_RATE_LIMIT = 300
@@ -51,38 +47,28 @@ def _db_uri():
 
 db = SQLAlchemy()
 models = {}
-active_version = "legacy"
+active_version = "india-salary"
 active_meta = {}
 
 
 def load_registry():
     if REGISTRY_PATH.exists():
         return json.loads(REGISTRY_PATH.read_text())
-    return {"active": "legacy", "versions": {"legacy": {"dir": "models"}}}
+    return {"active": "india-salary",
+            "versions": {"india-salary": {"dir": "models/india_candidate", "kind": "india_salary"}}}
 
 
 def active_models_dir():
     reg = load_registry()
-    version = os.environ.get("ESPS_MODEL_VERSION") or reg.get("active", "legacy")
+    version = os.environ.get("ESPS_MODEL_VERSION") or reg.get("active", "india-salary")
     v = reg["versions"].get(version)
     if v is None:
         raise KeyError(f"Unknown model version '{version}'")
     return version, BASE_DIR / v["dir"], v
 
 
-def active_feature_fields():
-    feats = active_meta.get("features")
-    if feats:
-        return [f for f in ALL_APP_FIELDS if f in feats]
-    return ALL_APP_FIELDS
 
 
-def active_categories():
-    return {
-        "Gender": sorted(models["le_gender"].classes_.tolist()),
-        "Department": sorted(models["le_dept"].classes_.tolist()),
-        "Job_Title": sorted(models["le_title"].classes_.tolist()),
-    }
 
 
 # ---------------------------------------------------------------- models
@@ -122,21 +108,6 @@ class BulkJob(db.Model):
 
 
 # Job-title taxonomy grouping supported titles into families (UI metadata only).
-JOB_FAMILIES = {
-    "Research Scientist": "Research & Development",
-    "Research Director": "Research & Development",
-    "Laboratory Technician": "Research & Development",
-    "Sales Executive": "Sales",
-    "Sales Representative": "Sales",
-    "Healthcare Representative": "Sales",
-    "Human Resources": "Human Resources",
-    "Manager": "Management",
-    "Manufacturing Director": "Management",
-    "Engineer": "Engineering",
-    "Analyst": "Engineering",
-    "Accountant": "Finance",
-    "HR Specialist": "Human Resources",
-}
 
 
 # ---------------------------------------------------------------- helpers
@@ -159,20 +130,13 @@ def load_all():
         elif (mdir / "meta.json").exists():
             active_meta = json.loads((mdir / "meta.json").read_text())
         else:
-            active_meta = {"version": version, "features": ALL_APP_FIELDS}
-        if vconf.get("kind") == "india_salary":
-            from ml import india_infer
-            india_infer._load()  # validates artifacts load
-            models["_kind"] = "india_salary"
-        else:
-            models["_kind"] = "standard"
-            for key, fname in [
-                ("attr_model", "attr_model.pkl"), ("sal_model", "sal_model.pkl"),
-                ("attr_scaler", "attr_scaler.pkl"), ("sal_scaler", "sal_scaler.pkl"),
-                ("le_gender", "le_gender.pkl"), ("le_dept", "le_dept.pkl"),
-                ("le_title", "le_title.pkl"),
-            ]:
-                models[key] = joblib.load(mdir / fname)
+            active_meta = {"version": version}
+        if vconf.get("kind") != "india_salary":
+            log.error("Only india_salary model kind is supported")
+            return False
+        from ml import india_infer
+        india_infer._load()  # validates artifacts load
+        models["_kind"] = "india_salary"
         active_version = version
         models["_version"] = version
         log.info("Loaded model version '%s' from %s", version, mdir)
@@ -247,98 +211,20 @@ def _as_int(value, field, lo, hi):
     return v, None
 
 
-def _as_float(value, field, lo, hi):
-    try:
-        if isinstance(value, bool):
-            raise ValueError
-        v = float(value)
-    except (TypeError, ValueError):
-        return None, _err(field, "must be a number")
-    if not lo <= v <= hi:
-        return None, _err(field, f"must be between {lo} and {hi}")
-    return v, None
 
 
-def _as_choice(value, field, choices):
-    if not isinstance(value, str) or value not in choices:
-        return None, _err(field, f"must be one of {sorted(choices)}")
-    return value, None
 
 
-def _validate_predict_payload(data):
-    if not isinstance(data, dict):
-        return None, _json_error("Request body must be a JSON object", 400, "BAD_REQUEST")
-
-    fields = set(active_feature_fields())
-    clean = {}
-    name = data.get("Name", "Anonymous")
-    if not isinstance(name, str) or len(name) > 100:
-        return None, _err("Name", "must be a string up to 100 chars")
-    clean["Name"] = name.strip() or "Anonymous"
-
-    age, e = _as_int(data.get("Age"), "Age", 16, 100)
-    if e: return None, e
-    clean["Age"] = age
-    exp, e = _as_int(data.get("Experience"), "Experience", 0, 60)
-    if e: return None, e
-    clean["Experience"] = exp
-    if "Hours" in fields:
-        hours, e = _as_int(data.get("Hours"), "Hours", 0, 500)
-        if e: return None, e
-        clean["Hours"] = hours
-    else:
-        clean["Hours"] = data.get("Hours", 160)
-    sat, e = _as_float(data.get("Satisfaction"), "Satisfaction", 0.0, 1.0)
-    if e: return None, e
-    clean["Satisfaction"] = sat
-    promo, e = _as_choice(data.get("Promotion"), "Promotion", {"Yes", "No"})
-    if e: return None, e
-    clean["Promotion"] = promo
-    cats = active_categories()
-    for key in ("Gender", "Department", "Job_Title"):
-        val, e = _as_choice(data.get(key), key, set(cats[key]))
-        if e: return None, e
-        clean[key] = val
-    clean["simulate"] = bool(data.get("simulate", False))
-    return clean, None
 
 
-def _encode_row(clean):
-    g_enc = models["le_gender"].transform([clean["Gender"]])[0]
-    d_enc = models["le_dept"].transform([clean["Department"]])[0]
-    t_enc = models["le_title"].transform([clean["Job_Title"]])[0]
-    p = 1 if clean["Promotion"] == "Yes" else 0
-    vals = {
-        "Age": clean["Age"], "Gender": g_enc, "Department": d_enc,
-        "Job_Title": t_enc, "Experience": clean["Experience"],
-        "Satisfaction": clean["Satisfaction"], "Hours": clean.get("Hours", 0), "Promotion": p,
-    }
-    return np.array([vals[f] for f in active_feature_fields()], dtype=float).reshape(1, -1)
 
 
-def _predict_row(X_arr):
-    risk = float(models["attr_model"].predict_proba(models["attr_scaler"].transform(X_arr))[0][1])
-    sal = float(models["sal_model"].predict(models["sal_scaler"].transform(X_arr))[0])
-    return risk, sal
 
 
 def _india_active():
     return bool(models) and models.get("_kind") == "india_salary"
 
 
-def _shap_explanation(X_arr):
-    try:
-        import shap
-        explainer = shap.TreeExplainer(models["attr_model"])
-        sv = explainer.shap_values(models["attr_scaler"].transform(X_arr))
-        arr = sv[1] if isinstance(sv, list) else sv
-        vals = np.asarray(arr).reshape(-1)
-        labels = active_feature_fields()
-        order = np.argsort(-np.abs(vals))[:5]
-        return [{"feature": labels[i], "impact": round(float(vals[i]), 4)} for i in order]
-    except Exception:
-        log.exception("SHAP explanation failed")
-        return None
 
 
 
@@ -393,129 +279,12 @@ def _read_upload(file):
     return df, None
 
 
-def _bulk_row_to_payload(row, idx):
-    """Map a spreadsheet row to the model payload. Returns (payload, missing_fields)."""
-    def cell(*names):
-        for n in names:
-            if n in row.index and pd.notna(row[n]) and str(row[n]).strip() != "":
-                return row[n]
-        return None
-    missing = []
-    dept = cell("Department")
-    title = cell("Job_Title")
-    age = cell("Age")
-    exp = cell("Years_At_Company", "Years_Experience", "Experience")
-    sat = cell("Satisfaction_Level", "Satisfaction")
-    gender = cell("Gender")
-    for label, val in [("Department", dept), ("Job_Title", title), ("Age", age),
-                       ("Experience", exp), ("Satisfaction", sat), ("Gender", gender)]:
-        if val is None:
-            missing.append(label)
-    promo_years = cell("Last_Promotion_Years", "Promotion_Last_5Years")
-    if promo_years is not None:
-        try:
-            promotion = "Yes" if float(promo_years) <= 5 else "No"
-        except (TypeError, ValueError):
-            promotion = "Yes" if str(promo_years).strip().lower() in ("1", "1.0", "yes", "true") else "No"
-    else:
-        promotion = "No"
-    payload = {
-        "Name": str(cell("Employee_Name") or cell("Employee_ID") or f"row-{idx}"),
-        "Employee_ID": cell("Employee_ID"),
-        "Employee_Name": cell("Employee_Name"),
-        "Current_Monthly_Salary": cell("Current_Monthly_Salary", "Salary"),
-        "Age": age, "Experience": exp, "Satisfaction": sat,
-        "Gender": gender, "Department": dept, "Job_Title": title,
-        "Promotion": promotion,
-        "Hours": cell("Monthly_Hours", "Average_Monthly_Hours", "Hours"),
-    }
-    return payload, missing
 
 
-def _validate_bulk_df(df):
-    """Returns (valid_entries, errors). Each entry: {row_no, payload, emp_id, emp_name, current_salary}."""
-    valid, errors = [], []
-    seen_ids = set()
-    cats = active_categories() if models else {}
-    for idx, row in df.iterrows():
-        row_no = int(idx) + 2
-        payload, missing = _bulk_row_to_payload(row, row_no)
-        emp_id = payload.get("Employee_ID")
-        emp_name = payload.get("Employee_Name") or payload["Name"]
-        if emp_id is not None:
-            emp_id = str(emp_id).strip()
-            if emp_id in seen_ids:
-                errors.append({"row": row_no, "EmpID": emp_id, "Employee": emp_name,
-                               "error": "duplicate Employee_ID"})
-                continue
-            seen_ids.add(emp_id)
-        if missing:
-            errors.append({"row": row_no, "EmpID": emp_id, "Employee": emp_name,
-                           "error": "missing required fields: " + ", ".join(missing)})
-            continue
-        cur = payload.get("Current_Monthly_Salary")
-        cur_val = None
-        if cur is not None:
-            try:
-                cur_val = float(cur)
-                if cur_val < 0:
-                    raise ValueError
-            except (TypeError, ValueError):
-                errors.append({"row": row_no, "EmpID": emp_id, "Employee": emp_name,
-                               "error": "invalid Current_Monthly_Salary"})
-                continue
-        # Build a predict payload; _validate_predict_payload enforces categories/ranges.
-        pred_payload = {k: payload[k] for k in
-                        ("Name", "Age", "Experience", "Satisfaction", "Gender",
-                         "Department", "Job_Title", "Promotion")}
-        pred_payload["Hours"] = payload.get("Hours") if payload.get("Hours") is not None else 160
-        clean, verr = _validate_predict_payload(pred_payload)
-        if verr:
-            errors.append({"row": row_no, "EmpID": emp_id, "Employee": emp_name,
-                           "error": "validation failed"})
-            continue
-        valid.append({"row_no": row_no, "payload": clean, "emp_id": emp_id,
-                      "emp_name": emp_name, "current_salary": cur_val,
-                      "department": clean["Department"], "job_title": clean["Job_Title"]})
-    return valid, errors
 
 
-def _process_bulk_entries(entries):
-    results = []
-    for e in entries:
-        try:
-            X = _encode_row(e["payload"])
-            risk, sal = _predict_row(X)
-            results.append({
-                "row": e["row_no"], "EmpID": e["emp_id"], "Employee": e["emp_name"],
-                "Department": e["department"], "Job_Title": e["job_title"],
-                "Current_Salary": e["current_salary"],
-                "Estimated_Salary": round(sal, 2),
-                "Salary_Delta": round(sal - e["current_salary"], 2) if e["current_salary"] is not None else None,
-                "Risk": round(risk, 4),
-                "Status": "ok", "Model": active_version,
-            })
-        except Exception:
-            log.exception("Bulk row %s prediction failed", e["row_no"])
-            results.append({"row": e["row_no"], "EmpID": e["emp_id"], "Employee": e["emp_name"],
-                            "Department": e["department"], "Job_Title": e["job_title"],
-                            "Current_Salary": e["current_salary"],
-                            "Estimated_Salary": None, "Status": "failed",
-                            "Error": "prediction failed"})
-    return results
 
 
-def _bulk_summary(results, errors, total):
-    ok = [r for r in results if r["Status"] == "ok"]
-    with_sal = [r for r in ok if r["Current_Salary"] is not None]
-    def avg(xs): return round(sum(xs) / len(xs), 2) if xs else None
-    return {
-        "total_rows": total, "processed": len(results), "succeeded": len(ok),
-        "failed": len(results) - len(ok), "validation_errors": len(errors),
-        "avg_estimated_salary": avg([r["Estimated_Salary"] for r in ok]),
-        "avg_current_salary": avg([r["Current_Salary"] for r in with_sal]),
-        "employees_with_salary": len(with_sal),
-    }
 
 
 def _scenario_calc(results, cfg):
@@ -524,34 +293,34 @@ def _scenario_calc(results, cfg):
     dept_pct = {str(k): float(v) for k, v in (cfg.get("dept_increments") or {}).items()}
     budget = cfg.get("budget")
     cap = cfg.get("cap")
-    rows, cur_monthly = [], 0.0
+    rows, cur_annual = [], 0.0
     dept_totals = {}
     for r in results:
         if r["Status"] != "ok" or r.get("Current_Salary") is None:
             continue
-        cur = float(r["Current_Salary"])
+        cur = float(r["Current_Salary"])  # annual INR
         p = dept_pct.get(r["Department"], pct)
         revised = cur * (1 + p / 100)
         if cap is not None:
-            revised = min(revised, float(cap))
-        diff_m = revised - cur
-        cur_monthly += cur
+            revised = min(revised, float(cap) * 12)  # cap is monthly -> annual
+        diff_a = revised - cur
+        cur_annual += cur
         d = dept_totals.setdefault(r["Department"], {"current": 0.0, "projected": 0.0, "employees": 0})
         d["current"] += cur; d["projected"] += revised; d["employees"] += 1
         rows.append({**r, "Increment_Pct": p, "Revised_Salary": round(revised, 2),
-                     "Monthly_Diff": round(diff_m, 2), "Annual_Diff": round(diff_m * 12, 2)})
-    proj_monthly = sum(d["projected"] for d in dept_totals.values())
-    annual_cost = (proj_monthly - cur_monthly) * 12
+                     "Monthly_Diff": round(diff_a / 12, 2), "Annual_Diff": round(diff_a, 2)})
+    proj_annual = sum(d["projected"] for d in dept_totals.values())
+    annual_cost = proj_annual - cur_annual
     return {
         "rows": rows,
-        "current_monthly_payroll": round(cur_monthly, 2),
-        "projected_monthly_payroll": round(proj_monthly, 2),
-        "current_annual_payroll": round(cur_monthly * 12, 2),
-        "projected_annual_payroll": round(proj_monthly * 12, 2),
+        "current_monthly_payroll": round(cur_annual / 12, 2),
+        "projected_monthly_payroll": round(proj_annual / 12, 2),
+        "current_annual_payroll": round(cur_annual, 2),
+        "projected_annual_payroll": round(proj_annual, 2),
         "total_additional_annual_cost": round(annual_cost, 2),
         "avg_increment_pct": round(pct, 2),
-        "department_impact": {k: {"current_monthly": round(v["current"], 2),
-                                  "projected_monthly": round(v["projected"], 2),
+        "department_impact": {k: {"current_monthly": round(v["current"] / 12, 2),
+                                  "projected_monthly": round(v["projected"] / 12, 2),
                                   "employees": v["employees"]}
                               for k, v in dept_totals.items()},
         "budget": budget, "budget_exceeded": bool(budget is not None and annual_cost > float(budget)),
@@ -817,46 +586,9 @@ def create_app(testing=False):
         if not load_all():
             return _json_error("Prediction models unavailable", 503, "MODELS_UNAVAILABLE")
         data = request.get_json(silent=True)
-        if _india_active():
-            return _predict_india(data)
-        clean, err = _validate_predict_payload(data)
-        if err:
-            return err
-        try:
-            X_arr = _encode_row(clean)
-            risk, sal = _predict_row(X_arr)
-        except Exception:
-            log.exception("Prediction failed")
-            return _json_error("Prediction failed", 500, "PREDICTION_ERROR")
-
-        explanation = _shap_explanation(X_arr)
-
-        if not clean["simulate"]:
-            try:
-                entry = PredictionHistory(
-                    name=clean["Name"], salary=sal, risk_score=risk, kind="prediction",
-                )
-                db.session.add(entry)
-                db.session.commit()
-            except Exception:
-                db.session.rollback()
-                log.exception("Failed to persist prediction history")
-
-        field_labels = {
-            "Age": "Age", "Gender": "Gender", "Department": "Dept",
-            "Job_Title": "Title", "Experience": "Tenure",
-            "Satisfaction": "Sat", "Hours": "Hours", "Promotion": "Promo",
-        }
-        return jsonify({
-            "risk": round(risk, 4),
-            "salary": round(sal, 2),
-            "salary_unit": active_meta.get("salary_unit", "inr_monthly"),
-            "model_version": active_version,
-            "feat_imp": models["attr_model"].feature_importances_.tolist(),
-            "features": [field_labels[f] for f in active_feature_fields()],
-            "explanation": explanation,
-            "disclaimer": "Model estimate only — not a causal prediction or employment decision.",
-        })
+        if not _india_active():
+            return _json_error("Active model does not support predictions", 503, "MODEL_UNSUPPORTED")
+        return _predict_india(data)
 
     def _predict_india(data):
         """India salary model: annual INR benchmark + quantile range."""
@@ -931,31 +663,28 @@ def create_app(testing=False):
     def model_info():
         load_all()
         reg = load_registry()
+        from ml import india_infer
+        cats = india_infer.supported_categories()
+        title_info = india_infer._load()["title_info"]
         payload = {
             "active_version": active_version,
             "available_versions": sorted(reg.get("versions", {}).keys()),
-            "features": active_feature_fields(),
-            "categories": active_categories() if models and not _india_active() else {},
-            "kind": "india_salary" if _india_active() else "standard",
-            "salary_unit": active_meta.get("salary_unit", "inr_annual" if _india_active() else "inr_monthly"),
-            "dataset": active_meta.get("dataset", "synthetic_demo"),
+            "kind": "india_salary",
+            "salary_unit": "inr_annual",
+            "dataset": active_meta.get("dataset", "india_salary_benchmarks"),
             "metrics": active_meta.get("evaluation", {}),
-            "caveats": active_meta.get("caveats", []),
-            "job_families": ({} if _india_active() else {t: JOB_FAMILIES.get(t, "Other") for t in active_categories().get("Job_Title", [])}),
-        }
-        if _india_active():
-            from ml import india_infer
-            payload["categories"] = india_infer.supported_categories()
-            payload["job_families"] = {t: (india_infer._load()["title_info"].get(t) or {}).get("job_family", "Other")
-                                       for t in payload["categories"]["Job_Title"]}
-            payload["features"] = ["Job_Title", "Experience", "City", "Seniority", "Industry"]
-            payload["algorithm"] = "HistGradientBoosting quantile regressors"
-            payload["prediction_output"] = "P10 · P50 · P90 annual salary (INR)"
-            payload["caveats"] = [
+            "features": ["Job_Title", "Experience", "City", "Seniority", "Industry"],
+            "categories": cats,
+            "job_families": {t: (title_info.get(t) or {}).get("job_family", "Other")
+                             for t in cats["Job_Title"]},
+            "algorithm": "HistGradientBoosting quantile regressors",
+            "prediction_output": "P10 · P50 · P90 annual salary (INR)",
+            "caveats": [
                 "India job-market sample (Fliar postings); annual INR benchmark.",
                 "Only job titles with >=5 training observations are supported.",
                 "Quantile range is not a statistical confidence interval.",
-            ]
+            ],
+        }
         return jsonify(payload)
 
     # ---------------------------------------------------------- analytics
@@ -986,17 +715,13 @@ def create_app(testing=False):
     def bulk_template():
         fmt = request.args.get("format", "csv")
         load_all()
-        if _india_active():
-            from ml import india_infer
-            _ic = india_infer.supported_categories()
-            _dept0 = (_ic.get("Department") or ["Engineering"])[0]
-            _title0 = (_ic.get("Job_Title") or ["Software Engineer"])[0]
-            _req_cols = {"Job_Title"}
-        else:
-            _ac = active_categories()
-            _dept0 = (_ac.get("Department") or ["Engineering"])[0]
-            _title0 = (_ac.get("Job_Title") or ["Engineer"])[0]
-            _req_cols = {"Department", "Job_Title", "Age", "Years_At_Company", "Gender", "Satisfaction_Level"}
+        if not _india_active():
+            return _json_error("Model does not support bulk templates", 503, "MODEL_UNSUPPORTED")
+        from ml import india_infer
+        _ic = india_infer.supported_categories()
+        _dept0 = (_ic.get("Department") or ["Engineering"])[0]
+        _title0 = (_ic.get("Job_Title") or ["Software Engineer"])[0]
+        _req_cols = {"Job_Title"}
         if fmt == "xlsx":
             from openpyxl import Workbook
             wb = Workbook(); ws = wb.active; ws.title = "Template"
@@ -1038,22 +763,7 @@ def create_app(testing=False):
             return _json_error("No file part", 400, "NO_FILE")
         df, err = _read_upload(request.files["file"])
         if err: return err
-        if _india_active():
-            return _bulk_india_validate(df, request.files["file"].filename)
-        valid, errors = _validate_bulk_df(df)
-        cats = active_categories()
-        return jsonify({
-            "filename": request.files["file"].filename,
-            "total_rows": int(len(df)),
-            "valid_rows": len(valid), "invalid_rows": len(errors),
-            "sample_valid": [{"EmpID": e["emp_id"], "Employee": e["emp_name"],
-                              "Department": e["department"], "Job_Title": e["job_title"]}
-                             for e in valid[:10]],
-            "errors": errors[:100],
-            "supported_departments": sorted(cats["Department"]),
-            "supported_job_titles": sorted(cats["Job_Title"]),
-            "model_version": active_version,
-        })
+        return _bulk_india_validate(df, request.files["file"].filename)
 
     @app.route("/api/bulk/process", methods=["POST"])
     def bulk_process():
@@ -1066,23 +776,7 @@ def create_app(testing=False):
             return _json_error("No file part", 400, "NO_FILE")
         df, err = _read_upload(request.files["file"])
         if err: return err
-        if _india_active():
-            return _bulk_india_process(df, request.files["file"].filename)
-        valid, errors = _validate_bulk_df(df)
-        results = _process_bulk_entries(valid)
-        summary = _bulk_summary(results, errors, len(df))
-        job = BulkJob(
-            filename=(request.files["file"].filename or "upload")[:255],
-            model_version=active_version,
-            total_rows=len(df), valid_rows=len(valid), invalid_rows=len(errors),
-            results_json=json.dumps(results), errors_json=json.dumps(errors),
-            summary_json=json.dumps(summary),
-        )
-        db.session.add(job); db.session.commit()
-        log.info("Bulk job %s: %s", job.id, summary)
-        return jsonify({"job_id": job.id, "summary": summary,
-                        "sample_results": results[:10],
-                        "sample_errors": errors[:10]})
+        return _bulk_india_process(df, request.files["file"].filename)
 
     @app.route("/api/bulk/jobs", methods=["GET"])
     def bulk_jobs_list():

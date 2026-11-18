@@ -5,5 +5,4 @@ pandas==3.1.1
 scikit-learn==1.8.0
 numpy==2.5.5
 joblib==1.6.0
-shap==0.54.1
 openpyxl==3.1.5

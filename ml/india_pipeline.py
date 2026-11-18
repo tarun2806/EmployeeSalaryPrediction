@@ -4,8 +4,6 @@ Dataset B: data/raw/india_salary_benchmarks_2026_sample.csv
   Real market job-posting observations (Fliar sample), salary_*_inr are ANNUAL INR.
 Dataset C: data/raw/labour_bureau_wages.csv
   Govt of India Labour Bureau sector wage reference (average daily wages, NOT salaries).
-Dataset A: data/raw/employee_attrition_data.csv
-  Synthetic demo data (noise-level signal; kept separate, see ml/datasets.py).
 """
 import hashlib
 import json
@@ -21,7 +19,6 @@ PROCESSED = BASE / "data" / "processed"
 RESULTS = BASE / "ml_results"
 INDIA_CSV = RAW / "india_salary_benchmarks_2026_sample.csv"
 LABOUR_CSV = RAW / "labour_bureau_wages.csv"
-ATTRITION_CSV = RAW / "employee_attrition_data.csv"
 
 RANDOM_STATE = 42
 SALARY_CAP_INR = 8_000_000      # reject postings above this (documented, reviewable)
@@ -346,7 +343,6 @@ def run_all():
                         "reject_reasons": rejected["reject_reason"].value_counts().to_dict()},
         "labour_bureau": {"rows": int(len(labour)), "sha256": sha256(LABOUR_CSV),
                           "note": "Sector-level avg daily wages (INR/day), Base Year 2016, 2016-2024. NOT individual salary records; kept as separate reference."},
-        "attrition_synthetic": {"rows": 1000, "note": "Synthetic demo; attrition/salary signal ~noise (see ml_results/metrics_synthetic.json). Kept separate."},
     }
     (RESULTS / "dataset_quality.json").write_text(json.dumps(audit, indent=2))
     (RESULTS / "source_provenance.json").write_text(json.dumps({
@@ -362,11 +358,6 @@ def run_all():
             "sha256": sha256(LABOUR_CSV),
             "source": "Govt of India Ministry of Labour — Labour Bureau wage surveys",
             "nature": "Official sector-level wage reference (avg daily wages)",
-        },
-        "employee_attrition_data": {
-            "file": "data/raw/employee_attrition_data.csv",
-            "sha256": sha256(ATTRITION_CSV),
-            "nature": "Synthetic demonstration dataset",
         },
     }, indent=2))
 

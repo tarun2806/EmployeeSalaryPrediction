@@ -50,9 +50,7 @@ Flask app.py ── rate limiter (DB-backed) ── security headers/CORS
 |---|---|
 | `data/raw/india_salary_benchmarks_2026_sample.csv` | Real job-posting salary observations (Fliar sample), annual INR — training source |
 | `data/raw/labour_bureau_wages.csv` | Govt of India sector wage reference (daily wages) — reference only, never mixed into salary targets |
-| `data/raw/employee_attrition_data.csv` | Small synthetic demo set — provenance/evaluation reference only |
 | `data/processed/` | Cleaned data, rejected rows (with reasons), job taxonomy |
-| `data/synthetic/` | Reproducible 50k fictional workforce for evaluation demos |
 | `ml_results/` | Dataset quality, provenance, model comparison and interval-coverage reports |
 
 ## Local setup
