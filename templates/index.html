@@ -76,7 +76,9 @@
 
         /* ---------- tabs / misc ---------- */
         .tab-content{display:none}
-        .tab-content.active{display:block;animation:fadeUp .25s ease}
+        .tab-content.active{display:block;animation:fadeUp .25s ease;min-height:100%}
+        .tab-content.active>.space-y-6{min-height:100%}
+        .tab-content.active>.space-y-6>*:last-child{margin-bottom:0}
         @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
         .spinner{width:16px;height:16px;border:2px solid rgba(0,0,0,.15);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
         @keyframes spin{to{transform:rotate(360deg)}}
@@ -306,6 +308,35 @@
                             </div>
                             <p class="text-[10.5px] mt-4 leading-relaxed" style="color:var(--faint);">Model estimate only — not a causal prediction or employment decision. <span id="resultModel" class="mono"></span></p>
                         </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                    <div class="card p-5">
+                        <h4 class="font-bold text-sm mb-2">How prediction works</h4>
+                        <ol class="text-[12px] space-y-1.5" style="color:var(--dim);">
+                            <li>1 · You enter job title, experience, city, seniority and industry.</li>
+                            <li>2 · Input is mapped to the saved preprocessing buckets.</li>
+                            <li>3 · Three quantile models estimate P10, P50 and P90 annual salaries.</li>
+                            <li>4 · The app shows the estimated salary and market range.</li>
+                        </ol>
+                    </div>
+                    <div class="card p-5">
+                        <h4 class="font-bold text-sm mb-2">Understanding the range</h4>
+                        <ul class="text-[12px] space-y-1.5" style="color:var(--dim);">
+                            <li><strong class="text-[var(--text)]">P10</strong> — lower market estimate (10% of observations below).</li>
+                            <li><strong class="text-[var(--text)]">P50</strong> — median estimate shown as the headline salary.</li>
+                            <li><strong class="text-[var(--text)]">P90</strong> — upper market estimate (10% of observations above).</li>
+                            <li>The spread reflects real market variation — it is <em>not</em> a confidence interval.</li>
+                        </ul>
+                    </div>
+                    <div class="card p-5">
+                        <h4 class="font-bold text-sm mb-2">Important limitations</h4>
+                        <ul class="text-[12px] space-y-1.5" style="color:var(--dim);">
+                            <li>Only job titles with enough market observations are supported.</li>
+                            <li>Estimates depend on the available job-posting sample.</li>
+                            <li>Predictions are benchmarks, not guaranteed compensation.</li>
+                            <li>Dataset: Indian job-market salary benchmarks (annual INR).</li>
+                        </ul>
                     </div>
                 </div>
             </section>
