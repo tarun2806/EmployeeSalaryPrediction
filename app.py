@@ -156,6 +156,8 @@ def load_all():
         meta_file = vconf.get("meta_file")
         if meta_file:
             active_meta = json.loads((BASE_DIR / meta_file).read_text())
+        elif (mdir / "meta.json").exists():
+            active_meta = json.loads((mdir / "meta.json").read_text())
         else:
             active_meta = {"version": version, "features": ALL_APP_FIELDS}
         if vconf.get("kind") == "india_salary":
@@ -947,6 +949,8 @@ def create_app(testing=False):
             payload["job_families"] = {t: (india_infer._load()["title_info"].get(t) or {}).get("job_family", "Other")
                                        for t in payload["categories"]["Job_Title"]}
             payload["features"] = ["Job_Title", "Experience", "City", "Seniority", "Industry"]
+            payload["algorithm"] = "HistGradientBoosting quantile regressors"
+            payload["prediction_output"] = "P10 · P50 · P90 annual salary (INR)"
             payload["caveats"] = [
                 "India job-market sample (Fliar postings); annual INR benchmark.",
                 "Only job titles with >=5 training observations are supported.",

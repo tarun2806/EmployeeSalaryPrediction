@@ -10,78 +10,147 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg:#0b0f14; --surface:#11161d; --surface-2:#161d27; --border:#232c38;
-            --text:#e6eaf0; --dim:#8b95a5; --faint:#5a6472;
-            --accent:#5b8cff; --accent-2:#7c5bff; --green:#34d399; --red:#f87171; --amber:#fbbf24;
+            --bg:#f5f6fa; --surface:#ffffff; --surface-2:#f1f3f8; --border:#e4e8f2;
+            --text:#1b2133; --dim:#5d6780; --faint:#9aa4ba;
+            --accent:#4f46e5; --accent-2:#7c3aed; --accent-3:#0ea5e9;
+            --neon:#06b6d4; --neon-2:#a855f7;
+            --green:#059669; --red:#dc2626; --amber:#d97706;
+            --grad:linear-gradient(135deg,#4f46e5,#a855f7 55%,#06b6d4);
+            --grad-btn:linear-gradient(135deg,#4f46e5,#7c3aed 55%,#06b6d4);
+            --glow:0 8px 24px rgba(79,70,229,.14);
         }
         *{box-sizing:border-box}
-        body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
-        ::selection{background:rgba(91,140,255,.3)}
-        :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+        body{
+            font-family:'Inter',system-ui,sans-serif;color:var(--text);
+            -webkit-font-smoothing:antialiased;background:var(--bg);
+        }
+        ::selection{background:rgba(79,70,229,.15)}
+        :focus-visible{outline:2px solid var(--neon);outline-offset:2px;border-radius:4px}
         @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+        /* ---------- chrome ---------- */
         .sidebar{background:var(--surface);border-right:1px solid var(--border)}
-        .topbar{background:rgba(11,15,20,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
-        .card{background:var(--surface);border:1px solid var(--border);border-radius:14px}
-        .card-hover{transition:border-color .15s ease}
-        .card-hover:hover{border-color:#2e3a4a}
+        .topbar{background:rgba(255,255,255,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+
+        /* ---------- cards ---------- */
+        .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 1px 2px rgba(20,25,50,.04)}
+        .card-hover{transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+        .card-hover:hover{transform:translateY(-2px);border-color:#b8a9f5;box-shadow:0 10px 28px rgba(79,70,229,.12),0 0 20px rgba(6,182,212,.10)}
+
+        /* ---------- nav ---------- */
         .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;color:var(--dim);font-size:13.5px;font-weight:500;cursor:pointer;transition:all .15s ease;border:1px solid transparent}
         .nav-item:hover{color:var(--text);background:var(--surface-2)}
-        .nav-item.active{color:var(--text);background:var(--surface-2);border-color:var(--border)}
+        .nav-item.active{color:var(--accent);background:linear-gradient(120deg,rgba(79,70,229,.1),rgba(6,182,212,.1));border-color:rgba(79,70,229,.35);font-weight:600;box-shadow:0 0 16px rgba(79,70,229,.10)}
         .nav-item.active .nav-ico{color:var(--accent)}
         .nav-ico{width:18px;text-align:center}
+
+        /* ---------- buttons ---------- */
         .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:13.5px;border-radius:9px;padding:9px 16px;transition:all .15s ease;cursor:pointer;border:1px solid transparent;text-decoration:none}
-        .btn-primary{background:var(--accent);color:#fff}
-        .btn-primary:hover{background:#4a7bef}
-        .btn-primary:disabled{opacity:.5;cursor:not-allowed}
-        .btn-ghost{background:transparent;color:var(--dim);border-color:var(--border)}
-        .btn-ghost:hover{color:var(--text);border-color:#33405a;background:var(--surface-2)}
-        .btn-danger{background:transparent;color:var(--red);border-color:rgba(248,113,113,.3)}
-        .btn-danger:hover{background:rgba(248,113,113,.1)}
+        .btn-primary{background:var(--grad-btn);color:#fff;box-shadow:0 0 14px rgba(124,58,237,.45),0 4px 14px rgba(79,70,229,.3)}
+        .btn-primary:hover{filter:brightness(1.08);transform:translateY(-1px);box-shadow:0 0 22px rgba(6,182,212,.55),0 6px 18px rgba(79,70,229,.4)}
+        .btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+        .btn-ghost{background:var(--surface);color:var(--dim);border-color:var(--border)}
+        .btn-ghost:hover{color:var(--text);border-color:#b9c2da;background:var(--surface-2)}
+        .btn-danger{background:transparent;color:var(--red);border-color:rgba(220,38,38,.3)}
+        .btn-danger:hover{background:rgba(220,38,38,.07)}
         .btn-sm{padding:6px 12px;font-size:12px;border-radius:7px}
-        .input,select.input{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:9px 12px;color:var(--text);font-size:13.5px;transition:border-color .15s ease}
-        .input:focus{border-color:var(--accent);outline:none}
+
+        /* ---------- inputs ---------- */
+        .input,select.input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:9px 12px;color:var(--text);font-size:13.5px;transition:border-color .15s ease,box-shadow .15s ease}
+        .input:focus{border-color:var(--neon);outline:none;box-shadow:0 0 0 3px rgba(6,182,212,.15),0 0 12px rgba(6,182,212,.12)}
         .input::placeholder{color:var(--faint)}
+        select.input option{background:#fff;color:var(--text)}
         .field-label{display:block;font-size:12px;font-weight:600;color:var(--dim);margin-bottom:5px;letter-spacing:.02em}
+
+        /* ---------- badges ---------- */
         .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
-        .badge-green{background:rgba(52,211,153,.12);color:var(--green)}
-        .badge-red{background:rgba(248,113,113,.12);color:var(--red)}
-        .badge-blue{background:rgba(91,140,255,.12);color:var(--accent)}
-        .badge-amber{background:rgba(251,191,36,.12);color:var(--amber)}
-        .badge-gray{background:rgba(139,149,165,.12);color:var(--dim)}
-        .stat-num{font-size:26px;font-weight:800;letter-spacing:-.02em}
-        .stat-label{font-size:11.5px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+        .badge-green{background:rgba(5,150,105,.1);color:var(--green)}
+        .badge-red{background:rgba(220,38,38,.1);color:var(--red)}
+        .badge-blue{background:rgba(79,70,229,.1);color:var(--accent)}
+        .badge-amber{background:rgba(217,119,6,.12);color:var(--amber)}
+        .badge-gray{background:rgba(93,103,128,.1);color:var(--dim)}
+
+        /* ---------- stats ---------- */
+        .stat-num{font-size:26px;font-weight:800;letter-spacing:-.02em;background:linear-gradient(120deg,#4f46e5,#a855f7 55%,#06b6d4);-webkit-background-clip:text;background-clip:text;color:transparent}
+        .stat-label{font-size:11.5px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+
+        /* ---------- tabs / misc ---------- */
         .tab-content{display:none}
         .tab-content.active{display:block;animation:fadeUp .25s ease}
         @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-        .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+        .spinner{width:16px;height:16px;border:2px solid rgba(0,0,0,.15);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
         @keyframes spin{to{transform:rotate(360deg)}}
         .table-base{width:100%;border-collapse:collapse;font-size:13px}
-        .table-base th{text-align:left;font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap}
+        .table-base th{text-align:left;font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap}
         .table-base td{padding:11px 14px;border-bottom:1px solid var(--border);white-space:nowrap}
+        .table-base tbody tr{transition:background .12s ease}
         .table-base tbody tr:hover{background:var(--surface-2)}
-        input[type="range"]{-webkit-appearance:none;width:100%;height:5px;border-radius:4px;background:var(--border)}
-        input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg)}
+        .table-base th[data-sort]{cursor:pointer;user-select:none}
+        .table-base th[data-sort]:hover{color:var(--accent)}
+
+        input[type="range"]{-webkit-appearance:none;width:100%;height:6px;border-radius:4px;background:var(--border);outline:none}
+        input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;cursor:pointer;border:3px solid var(--accent);box-shadow:0 1px 4px rgba(0,0,0,.15)}
         .empty-state{text-align:center;padding:48px 24px;color:var(--dim)}
-        .empty-state .ico{font-size:36px;margin-bottom:12px;opacity:.6}
+        .empty-state .ico{font-size:36px;margin-bottom:12px;opacity:.5}
         .mono{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px}
-        .risk-bar{height:6px;border-radius:4px;background:var(--border);overflow:hidden}
-        .risk-bar>div{height:100%;border-radius:4px;transition:width .4s ease}
+        .risk-bar{height:8px;border-radius:5px;background:var(--surface-2);overflow:hidden}
+        .risk-bar>div{height:100%;border-radius:5px;transition:width .4s ease;box-shadow:0 0 10px currentColor}
+
+        /* ---------- stepper ---------- */
         .stepper{display:flex;gap:0;margin-bottom:24px}
-        .step{flex:1;text-align:center;position:relative;padding-top:26px;font-size:11.5px;font-weight:600;color:var(--faint)}
-        .step::before{content:"";position:absolute;top:8px;left:50%;transform:translateX(-50%);width:14px;height:14px;border-radius:50%;background:var(--border);border:2px solid var(--surface)}
-        .step::after{content:"";position:absolute;top:14px;left:calc(-50% + 14px);width:calc(100% - 28px);height:2px;background:var(--border)}
+        .step{flex:1;text-align:center;position:relative;padding-top:28px;font-size:11.5px;font-weight:600;color:var(--faint)}
+        .step::before{content:"";position:absolute;top:9px;left:50%;transform:translateX(-50%);width:15px;height:15px;border-radius:50%;background:var(--surface);border:2px solid var(--border);transition:all .2s ease}
+        .step::after{content:"";position:absolute;top:16px;left:calc(-50% + 15px);width:calc(100% - 30px);height:2px;background:var(--border);transition:background .2s ease}
         .step:last-child::after{display:none}
         .step.done{color:var(--green)}
-        .step.done::before{background:var(--green)}
+        .step.done::before{background:var(--green);border-color:var(--green)}
         .step.done::after{background:var(--green)}
         .step.active{color:var(--accent)}
-        .step.active::before{background:var(--accent);box-shadow:0 0 0 4px rgba(91,140,255,.15)}
-        .dropzone{border:2px dashed var(--border);border-radius:14px;padding:40px 24px;text-align:center;cursor:pointer;transition:border-color .15s ease,background .15s ease}
-        .dropzone:hover,.dropzone.drag{border-color:var(--accent);background:rgba(91,140,255,.05)}
-        @media (max-width:768px){
-            .sidebar{position:static;width:100%!important;height:auto!important}
-            .nav-scroll{display:flex;overflow-x:auto;gap:4px;padding-bottom:4px}
-            .nav-item{white-space:nowrap}
+        .step.active::before{background:var(--neon);border-color:var(--neon);box-shadow:0 0 0 4px rgba(6,182,212,.2),0 0 14px rgba(6,182,212,.6)}
+
+        /* ---------- dropzone ---------- */
+        .dropzone{
+            border:2px dashed var(--border);border-radius:14px;padding:44px 24px;text-align:center;cursor:pointer;
+            transition:border-color .2s ease,background .2s ease;
+            background:var(--surface-2);
+        }
+        .dropzone:hover,.dropzone.drag{
+            border-color:var(--neon);background:rgba(6,182,212,.05);
+            box-shadow:0 0 26px rgba(6,182,212,.22),inset 0 0 22px rgba(6,182,212,.05);
+        }
+        /* ---------- mobile navigation ---------- */
+        .nav-menu{display:none}
+        .nav-menu.open{display:flex}
+        @media (min-width:768px){ .nav-menu{display:flex} }
+        .nav-toggle{
+            margin-left:auto;width:38px;height:38px;border-radius:9px;border:1px solid var(--border);
+            background:var(--surface-2);color:var(--dim);display:flex;align-items:center;justify-content:center;
+            cursor:pointer;transition:all .15s ease;flex-shrink:0;
+        }
+        .nav-toggle:hover{color:var(--text);border-color:rgba(79,70,229,.4)}
+        .nav-toggle[aria-expanded="true"]{color:var(--accent);border-color:rgba(79,70,229,.5);background:rgba(79,70,229,.08)}
+
+        /* ---------- responsive ---------- */
+        html,body{overflow-x:hidden}
+        .main-scroll{max-height:calc(100vh - 57px)}
+        @media (max-width:767px){
+            .sidebar{padding:10px 12px}
+            .main-scroll{max-height:none;overflow:visible}
+            .sidebar-foot{display:none!important}
+            .stat-num{font-size:21px}
+            .step{font-size:10px;padding-top:24px}
+            .step::before{width:12px;height:12px;top:7px}
+            .step::after{top:13px;left:calc(-50% + 12px);width:calc(100% - 24px)}
+            .page-sub{display:none}
+            .card{border-radius:12px}
+            .table-base th,.table-base td{padding:9px 10px;font-size:12px}
+        }
+        @media (max-width:380px){
+            .stat-num{font-size:19px}
+            .btn{padding:8px 12px;font-size:12.5px}
+        }
+        @media (min-width:768px) and (max-width:1023px){
+            .stat-num{font-size:23px}
         }
     </style>
 </head>
@@ -89,24 +158,27 @@
 <div id="appView" class="h-full flex-col md:flex-row flex">
 
     <!-- Sidebar -->
-    <aside class="sidebar w-full md:w-60 shrink-0 flex flex-col p-4 gap-1">
-        <div class="flex items-center gap-3 px-2 py-3 mb-2">
-            <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background:linear-gradient(135deg,var(--accent),var(--accent-2));">
+    <aside class="sidebar w-full md:w-60 shrink-0 flex flex-col p-4 md:p-4 gap-1">
+        <div class="flex items-center gap-3 px-2 py-2 md:py-3 mb-1 md:mb-2">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background:var(--grad);box-shadow:0 2px 8px rgba(79,70,229,.3);">
                 <span class="text-white font-extrabold text-xs">S</span>
             </div>
             <div class="min-w-0">
                 <h1 class="font-extrabold text-sm tracking-tight truncate">Salary Predictor</h1>
-                <p class="text-[10px] truncate" style="color:var(--dim);">Employee Salary Prediction System</p>
+                <p class="text-[10px] truncate hidden sm:block" style="color:var(--dim);">Employee Salary Prediction System</p>
             </div>
+            <button id="navToggle" class="nav-toggle md:hidden" aria-label="Toggle navigation" aria-expanded="false" aria-controls="navMenu">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
         </div>
-        <nav class="nav-scroll md:flex-col flex gap-1 flex-1">
+        <nav id="navMenu" class="nav-menu flex-col gap-1" aria-label="Main navigation">
             <div data-tab="dashboard" class="nav-item active"><span class="nav-ico">◈</span>Dashboard</div>
             <div data-tab="predict" class="nav-item"><span class="nav-ico">◎</span>Individual Prediction</div>
             <div data-tab="bulk" class="nav-item"><span class="nav-ico">▦</span>Bulk Salary Planning</div>
             <div data-tab="history" class="nav-item"><span class="nav-ico">≡</span>Prediction History</div>
             <div data-tab="model" class="nav-item"><span class="nav-ico">◈</span>Model Information</div>
         </nav>
-        <div class="mt-auto pt-3 border-t" style="border-color:var(--border);">
+        <div class="sidebar-foot mt-auto pt-3 border-t hidden md:block" style="border-color:var(--border);">
             <div class="flex items-center justify-between px-2 py-1.5">
                 <div class="flex items-center gap-2 min-w-0">
                     <span id="statusDot" class="w-2 h-2 rounded-full shrink-0" style="background:#5a6472;"></span>
@@ -120,27 +192,27 @@
 
     <!-- Main -->
     <div class="flex-1 flex flex-col min-w-0">
-        <header class="topbar sticky top-0 z-40 px-5 md:px-8 py-3.5 flex items-center justify-between">
-            <div>
-                <h2 id="pageTitle" class="font-bold text-base">Dashboard</h2>
-                <p id="pageSub" class="text-[11.5px]" style="color:var(--dim);">AI-powered salary estimation and workforce salary planning</p>
+        <header class="topbar sticky top-0 z-40 px-4 md:px-8 py-3 md:py-3.5 flex items-center justify-between">
+            <div class="min-w-0">
+                <h2 id="pageTitle" class="font-bold text-base md:text-lg truncate">Dashboard</h2>
+                <p id="pageSub" class="text-[11px] md:text-[11.5px] page-sub truncate" style="color:var(--dim);">AI-powered salary estimation and workforce salary planning</p>
             </div>
-            <span class="badge badge-gray hidden md:inline-flex">LOCAL DEMO</span>
+            <span class="badge badge-gray hidden md:inline-flex shrink-0">LOCAL DEMO</span>
         </header>
 
-        <main class="flex-1 overflow-y-auto p-5 md:p-8" style="max-height:calc(100vh - 57px);">
+        <main class="flex-1 overflow-y-auto p-4 md:p-8 main-scroll">
 
             <!-- ===== DASHBOARD ===== -->
             <section id="dashboard" class="tab-content active space-y-6">
-                <div id="dashOnboarding" class="card p-10 text-center">
-                    <div class="text-4xl mb-4" style="opacity:.5;">💼</div>
-                    <h3 class="font-bold text-lg mb-2">Plan your company's salary structure</h3>
-                    <p class="text-sm max-w-md mx-auto mb-6" style="color:var(--dim);">
+                <div id="dashOnboarding" class="card p-6 md:p-10 text-center">
+                    <div class="text-3xl md:text-4xl mb-3 md:mb-4" style="opacity:.5;">💼</div>
+                    <h3 class="font-bold text-base md:text-lg mb-2">Plan your company's salary structure</h3>
+                    <p class="text-sm max-w-md mx-auto mb-5 md:mb-6" style="color:var(--dim);">
                         Start by uploading your employee salary sheet for company-wide salary benchmarks and increment planning, or make an individual salary prediction.
                     </p>
-                    <div class="flex flex-wrap justify-center gap-3">
-                        <button class="btn btn-primary" data-goto="predict">Predict Individual Salary</button>
-                        <button class="btn btn-ghost" data-goto="bulk">Upload Employee Spreadsheet</button>
+                    <div class="flex flex-col sm:flex-row flex-wrap justify-center gap-3">
+                        <button class="btn btn-primary w-full sm:w-auto" data-goto="predict">Predict Individual Salary</button>
+                        <button class="btn btn-ghost w-full sm:w-auto" data-goto="bulk">Upload Employee Spreadsheet</button>
                     </div>
                 </div>
 
@@ -180,7 +252,7 @@
                     <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
                         <div class="card p-6 xl:col-span-2">
                             <h3 class="font-bold text-sm mb-4">Salary distribution by department</h3>
-                            <div class="h-64"><canvas id="dashDeptChart"></canvas></div>
+                            <div class="h-48 md:h-64"><canvas id="dashDeptChart"></canvas></div>
                         </div>
                         <div class="card p-6">
                             <h3 class="font-bold text-sm mb-4">Recent bulk jobs</h3>
@@ -483,38 +555,54 @@
                 </div>
             </section>
 
-            <!-- ===== MODEL INFO ===== -->
+            <!-- ===== MODEL OVERVIEW ===== -->
             <section id="model" class="tab-content space-y-6">
                 <div>
-                    <h3 class="font-bold text-lg">Model Information</h3>
-                    <p class="text-sm mt-0.5" style="color:var(--dim);">Active model version, training data and honest evaluation metrics.</p>
+                    <h3 class="font-bold text-lg">Model Overview</h3>
+                    <p class="text-sm mt-0.5" style="color:var(--dim);">Understand the intelligence behind salary predictions.</p>
                 </div>
                 <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
                     <div class="card p-6">
                         <h4 class="font-bold text-sm mb-4">Active model</h4>
                         <div class="space-y-3 text-sm">
                             <div class="flex justify-between"><span style="color:var(--dim);">Version</span><span id="miVersion" class="font-semibold mono">—</span></div>
-                            <div class="flex justify-between"><span style="color:var(--dim);">Training dataset</span><span id="miDataset" class="font-semibold">—</span></div>
-                            <div class="flex justify-between"><span style="color:var(--dim);">Salary unit</span><span id="miUnit" class="font-semibold">—</span></div>
-                            <div class="flex justify-between"><span style="color:var(--dim);">Features</span><span id="miFeatures" class="font-semibold mono text-xs">—</span></div>
-                        </div>
-                        <div class="mt-5 pt-4 border-t" style="border-color:var(--border);">
-                            <p class="text-[11px] font-bold uppercase tracking-wider mb-2" style="color:var(--dim);">Caveats</p>
-                            <ul id="miCaveats" class="text-[11px] space-y-1" style="color:var(--dim);"></ul>
+                            <div class="flex justify-between"><span style="color:var(--dim);">Status</span><span class="badge badge-green">Active</span></div>
+                            <div class="flex justify-between"><span style="color:var(--dim);">Prediction unit</span><span id="miUnit" class="font-semibold">—</span></div>
+                            <div class="flex justify-between"><span style="color:var(--dim);">ML algorithm</span><span id="miAlgo" class="font-semibold">—</span></div>
+                            <div class="flex justify-between"><span style="color:var(--dim);">Prediction output</span><span id="miOutput" class="font-semibold mono text-xs">—</span></div>
                         </div>
                     </div>
                     <div class="card p-6">
-                        <h4 class="font-bold text-sm mb-4">Supported categories</h4>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                            <div><p class="font-bold mb-1" style="color:var(--dim);">DEPARTMENTS</p><div id="miDepts" class="space-y-0.5"></div></div>
-                            <div><p class="font-bold mb-1" style="color:var(--dim);">GENDERS</p><div id="miGenders" class="space-y-0.5"></div></div>
-                            <div><p class="font-bold mb-1" style="color:var(--dim);">JOB TITLES (with family)</p><div id="miTitles" class="space-y-0.5"></div></div>
+                        <h4 class="font-bold text-sm mb-4">Dataset</h4>
+                        <p id="miDataset" class="text-sm font-semibold">—</p>
+                        <p class="text-[11px] mt-2" style="color:var(--dim);">Trained on Indian job-market salary benchmarks — job-posting salary observations in annual INR.</p>
+                        <div class="mt-4 pt-4 border-t" style="border-color:var(--border);">
+                            <p class="text-[11px] font-bold uppercase tracking-wider mb-2" style="color:var(--dim);">Coverage</p>
+                            <div class="flex flex-wrap gap-2 text-[11px]">
+                                <span class="badge badge-blue" id="miTitleCount">—</span>
+                                <span class="badge badge-blue" id="miCityCount">—</span>
+                                <span class="badge badge-blue" id="miFamCount">—</span>
+                            </div>
                         </div>
                     </div>
                     <div class="card p-6 xl:col-span-2">
-                        <h4 class="font-bold text-sm mb-2">Evaluation metrics (held-out test)</h4>
-                        <p class="text-[11px] mb-4" style="color:var(--dim);">Measured on the dataset's own test split — fictional sample data, not real-company accuracy.</p>
-                        <div id="miMetrics" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+                        <h4 class="font-bold text-sm mb-2">Features used</h4>
+                        <p id="miFeatures" class="text-sm font-semibold mono">—</p>
+                        <h4 class="font-bold text-sm mt-5 mb-2">How the model works</h4>
+                        <ol class="text-[12px] space-y-1" style="color:var(--dim);">
+                            <li>1 · You enter job title, experience, city, seniority and industry.</li>
+                            <li>2 · Input is mapped to the saved preprocessing buckets.</li>
+                            <li>3 · Three quantile models estimate P10, P50 and P90 annual salaries.</li>
+                            <li>4 · The app shows the estimated salary and market range.</li>
+                        </ol>
+                    </div>
+                    <div class="card p-6 xl:col-span-2">
+                        <h4 class="font-bold text-sm mb-2">Important limitations</h4>
+                        <ul id="miCaveats" class="text-[11px] space-y-1" style="color:var(--dim);"></ul>
+                        <div class="mt-4 pt-4 border-t" style="border-color:var(--border);">
+                            <p class="text-[11px] font-bold uppercase tracking-wider mb-3" style="color:var(--dim);">Evaluation metrics (held-out test)</p>
+                            <div id="miMetrics" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+                        </div>
                     </div>
                 </div>
             </section>

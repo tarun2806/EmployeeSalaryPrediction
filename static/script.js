@@ -40,8 +40,20 @@ async function boot() {
 }
 
 // ---------- Navigation ----------
-document.querySelectorAll(".nav-item").forEach(i => i.addEventListener("click", () => switchTab(i.dataset.tab)));
-document.querySelectorAll("[data-goto]").forEach(b => b.addEventListener("click", () => switchTab(b.dataset.goto)));
+const navToggle = document.getElementById("navToggle");
+const navMenu = document.getElementById("navMenu");
+function closeMobileNav() {
+    if (navMenu) navMenu.classList.remove("open");
+    if (navToggle) navToggle.setAttribute("aria-expanded", "false");
+}
+if (navToggle && navMenu) {
+    navToggle.addEventListener("click", () => {
+        const open = navMenu.classList.toggle("open");
+        navToggle.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+}
+document.querySelectorAll(".nav-item").forEach(i => i.addEventListener("click", () => { switchTab(i.dataset.tab); closeMobileNav(); }));
+document.querySelectorAll("[data-goto]").forEach(b => b.addEventListener("click", () => { switchTab(b.dataset.goto); closeMobileNav(); }));
 function switchTab(tab) {
     document.querySelectorAll(".nav-item").forEach(i => i.classList.toggle("active", i.dataset.tab === tab));
     document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
@@ -79,10 +91,18 @@ async function loadModelSchema() {
                 document.getElementById("jobFamilyHint") && (document.getElementById("jobFamilyHint").textContent = fam ? "Family: " + fam : "");
             });
         }
-        document.getElementById("miVersion").textContent = modelSchema.active_version;
-        document.getElementById("miDataset").textContent = modelSchema.dataset || "—";
-        document.getElementById("miUnit").textContent = isIndia ? "₹ / year (annual INR, dataset)" : (modelSchema.salary_unit === "monthly_income_dataset_currency" ? "USD / month (dataset currency)" : "₹ / month (estimate)");
-        document.getElementById("miFeatures").textContent = modelSchema.features.join(", ");
+        // model overview fields
+        const _set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+        _set("miVersion", modelSchema.active_version);
+        _set("miDataset", modelSchema.dataset || "—");
+        _set("miUnit", isIndia ? "₹ / year (annual INR, dataset)" : (modelSchema.salary_unit === "monthly_income_dataset_currency" ? "USD / month (dataset currency)" : "₹ / month (estimate)"));
+        _set("miAlgo", modelSchema.algorithm || "—");
+        _set("miOutput", modelSchema.prediction_output || "—");
+        _set("miFeatures", (modelSchema.features || []).join(", "));
+        const _cats = modelSchema.categories || {};
+        _set("miTitleCount", (_cats.Job_Title || []).length + " supported titles");
+        _set("miCityCount", (_cats.City || []).length + " cities");
+        _set("miFamCount", (_cats.Job_Family || []).length + " job families");
         document.getElementById("miCaveats").innerHTML = "";
         (modelSchema.caveats || []).forEach(c => {
             const li = document.createElement("li"); li.textContent = "• " + c;
@@ -93,19 +113,21 @@ async function loadModelSchema() {
         document.getElementById("dUnit1").textContent = isInd ? "₹ / year (annual, dataset)" : (unit ? "₹ / month (estimate)" : "USD / month (dataset)");
         document.getElementById("salUnit").textContent = isInd ? "₹ / year · market benchmark (annual INR)" : (unit ? "₹ / month · benchmark estimate" : "USD / month · benchmark estimate");
         // categories
-        const fill = (id, vals) => { const el = document.getElementById(id); el.innerHTML = "";
+        const fill = (id, vals) => { const el = document.getElementById(id); if (!el) return; el.innerHTML = "";
             (vals || []).forEach(v => { const d = document.createElement("div"); d.textContent = v; el.appendChild(d); }); };
         fill("miDepts", modelSchema.categories.Department);
         fill("miGenders", modelSchema.categories.Gender);
-        const titles = document.getElementById("miTitles"); titles.innerHTML = "";
-        (modelSchema.categories.Job_Title || []).forEach(t => {
-            const fam = (modelSchema.job_families || {})[t] || "Other";
-            const d = document.createElement("div");
-            d.innerHTML = "";
-            const s1 = document.createElement("span"); s1.textContent = t;
-            const s2 = document.createElement("span"); s2.style.color = "var(--faint)"; s2.textContent = " · " + fam;
-            d.appendChild(s1); d.appendChild(s2); titles.appendChild(d);
-        });
+        const titles = document.getElementById("miTitles");
+        if (titles) {
+            titles.innerHTML = "";
+            (modelSchema.categories.Job_Title || []).forEach(t => {
+                const fam = (modelSchema.job_families || {})[t] || "Other";
+                const d = document.createElement("div");
+                const s1 = document.createElement("span"); s1.textContent = t;
+                const s2 = document.createElement("span"); s2.style.color = "var(--faint)"; s2.textContent = " · " + fam;
+                d.appendChild(s1); d.appendChild(s2); titles.appendChild(d);
+            });
+        }
         // metrics
         const mets = document.getElementById("miMetrics"); mets.innerHTML = "";
         const ev = modelSchema.metrics || {};
@@ -121,10 +143,13 @@ async function loadModelSchema() {
         });
         if (!mets.children.length) { const p = document.createElement("p"); p.className = "text-xs"; p.style.color = "var(--dim)"; p.textContent = "No evaluation metrics recorded for this version."; mets.appendChild(p); }
         // template column guide
-        const tc = document.getElementById("tplColumns"); tc.innerHTML = "";
-        (modelSchema.template_columns || []).forEach(c => {
-            const d = document.createElement("div"); d.textContent = "• " + c; tc.appendChild(d);
-        });
+        const tc = document.getElementById("tplColumns");
+        if (tc) {
+            tc.innerHTML = "";
+            (modelSchema.template_columns || []).forEach(c => {
+                const d = document.createElement("div"); d.textContent = "• " + c; tc.appendChild(d);
+            });
+        }
         // dept hint for scenario overrides
         const hint = document.getElementById("deptIncHint");
         if (hint) hint.textContent = "Departments: " + (modelSchema.categories.Department || []).join(", ");
@@ -203,12 +228,12 @@ async function loadDashboard() {
                 type: "bar",
                 data: { labels,
                     datasets: [
-                        { label: "Avg benchmark", data: labels.map(k => +(dept[k].est.reduce((a,b)=>a+b,0)/dept[k].est.length).toFixed(0)), backgroundColor: "rgba(91,140,255,.75)", borderRadius: 6 },
-                        { label: "Avg current", data: labels.map(k => dept[k].cur.length ? +(dept[k].cur.reduce((a,b)=>a+b,0)/dept[k].cur.length).toFixed(0) : 0), backgroundColor: "rgba(124,91,255,.55)", borderRadius: 6 }] },
+                        { label: "Avg benchmark", data: labels.map(k => +(dept[k].est.reduce((a,b)=>a+b,0)/dept[k].est.length).toFixed(0)), backgroundColor: "rgba(79,70,229,.8)", borderRadius: 6 },
+                        { label: "Avg current", data: labels.map(k => dept[k].cur.length ? +(dept[k].cur.reduce((a,b)=>a+b,0)/dept[k].cur.length).toFixed(0) : 0), backgroundColor: "rgba(124,58,237,.5)", borderRadius: 6 }] },
                 options: { responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { labels: { color: "#8b95a5", font: { size: 11 } } } },
-                    scales: { y: { grid: { color: "rgba(255,255,255,.05)" }, border: { display: false }, ticks: { color: "#8b95a5", font: { size: 10 } } },
-                              x: { grid: { display: false }, ticks: { color: "#8b95a5", font: { size: 10 } } } } },
+                    plugins: { legend: { labels: { color: "#5d6780", font: { size: 11 } } } },
+                    scales: { y: { grid: { color: "rgba(20,25,50,.07)" }, border: { display: false }, ticks: { color: "#5d6780", font: { size: 10 } } },
+                              x: { grid: { display: false }, ticks: { color: "#5d6780", font: { size: 10 } } } } },
             });
         }).catch(() => {});
         // recent jobs list
@@ -314,13 +339,13 @@ function renderImportanceChart(labels, data) {
     importanceChart = new Chart(ctx, {
         type: "bar",
         data: { labels, datasets: [{ data,
-            backgroundColor: data.map(v => v > 0.15 ? "rgba(91,140,255,.85)" : "rgba(91,140,255,.25)"),
+            backgroundColor: data.map(v => v > 0.15 ? "rgba(79,70,229,.85)" : "rgba(79,70,229,.2)"),
             borderRadius: 6, borderSkipped: false }] },
         options: { responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
-                y: { beginAtZero: true, grid: { color: "rgba(255,255,255,.05)" }, border: { display: false }, ticks: { color: "#8b95a5", font: { size: 10 } } },
-                x: { grid: { display: false }, ticks: { color: "#8b95a5", font: { size: 10 } } } } },
+                y: { beginAtZero: true, grid: { color: "rgba(20,25,50,.07)" }, border: { display: false }, ticks: { color: "#5d6780", font: { size: 10 } } },
+                x: { grid: { display: false }, ticks: { color: "#5d6780", font: { size: 10 } } } } },
     });
 }
 
