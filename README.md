@@ -1,5 +1,7 @@
 # Employee Salary Prediction System
 
+**[🚀 Live Demo](https://employeesalaryprediction-delta.vercel.app/)**
+
 An HR decision-support web app that estimates **market salary benchmarks (annual INR)** for employees in the Indian job market, supports **bulk salary planning** for entire teams, and lets HR teams model **salary-increment scenarios** before committing budget.
 
 ## Problem statement
