@@ -14,7 +14,17 @@ HR teams lack a fast, data-grounded way to answer: *"What should this role reali
 - **Bulk salary planning** — upload a CSV/XLSX employee sheet, validate rows, run salary estimates for the whole company, review results in a paginated table, and export to Excel/CSV.
 - **Increment scenarios** — apply a uniform or per-department increment percentage to current salaries, optionally capped by budget or salary ceiling, and see projected payroll impact. This is transparent arithmetic, not an ML prediction.
 - **Prediction history** — individual predictions and bulk jobs are stored in SQLite and browsable in the UI.
-- **Model information page** — shows the active model version, dataset, salary unit, supported categories and honest evaluation metrics.
+- **Model Overview page** — explains the active model, dataset, algorithm, features, workflow, coverage and limitations, plus verified evaluation metrics.
+
+## Pages
+
+| Page | Purpose |
+|---|---|
+| Dashboard | Company-wide salary-planning overview and quick actions |
+| Individual Prediction | Estimate one employee's annual salary benchmark (P10/P50/P90) |
+| Bulk Salary Planning | 5-step workflow: upload → validate → process → scenario → export |
+| Prediction History | Browse stored predictions and bulk jobs (search, pagination, delete) |
+| Model Overview | Model transparency — dataset, algorithm, features, limitations, metrics |
 
 ## Technology stack
 
@@ -22,8 +32,8 @@ HR teams lack a fast, data-grounded way to answer: *"What should this role reali
 - **ML:** scikit-learn (HistGradientBoosting quantile regressors), joblib, pandas, NumPy
 - **Database:** SQLite (prediction history, bulk jobs, rate-limit counters)
 - **Frontend:** server-rendered Jinja template + vanilla JS, TailwindCSS (CDN), Chart.js
-- **Testing:** pytest
-- **Deployment:** Vercel (`vercel.json`); local dev via `python app.py`
+- **Testing:** pytest (50 tests)
+- **Deployment:** Vercel — auto-deploys from `main`; local dev via `python app.py`
 
 ## ML approach
 
@@ -69,6 +79,14 @@ The registry defaults to `india-salary`. To pin a version explicitly: `ESPS_MODE
 
 1. Open the app → **Individual Prediction** → Job title "Software Engineer", 4 yrs experience, Bengaluru → annual INR estimate + p10–p90 range.
 2. **Bulk Salary Planning** → download the template → upload your sheet → validate → process → review → plan a 10% increment scenario → export `.xlsx`.
+
+## Deployment
+
+Live at **https://employeesalaryprediction-delta.vercel.app/** — Vercel builds `main` automatically on every push. Serverless constraints to be aware of:
+
+- SQLite DB is at `/tmp/history.db` — **not durable** across cold starts/instances; history may reset.
+- Model artifacts are loaded from the bundled `models/` directory on cold start.
+- Set `ESPS_TRUST_PROXY=1` in Vercel env vars so rate limiting sees real client IPs via `X-Forwarded-For`.
 
 ## Limitations
 
